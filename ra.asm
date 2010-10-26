@@ -3,8 +3,7 @@
 
 
 dane1	segment
-errBrakArg	db "Mam plan!",10,13,'$'
-tekstB	db 10,13,"Wykonam go sam!",10,13,'$'
+	errBrakArg	db "Blad: nie podano argumentow programu lub sa one niepoprawne.",10,13,'$'
 dane1	ends
 
 
@@ -16,15 +15,17 @@ start:
 	mov	sp,offset top1	; offset stosu -> SP
 
 		; === Wyświetlenie napisu
-	mov cl, es:80h		; cx=ilość bajtów argumentów
-	xor ch, ch
-	jcxz brak_arg		; jeśli CX=0 to skocz do brak_arg
-	sub cx, 1
-	mov ah, 2			; wyświetlanie kropek
-petla:
-	mov dl, es:82h
+	mov cl,es:80h		; CX=ilość bajtów argumentów
+	xor ch,ch
+	jcxz brak_arg		; jeśli CX==0 to skocz do brak_arg
+	sub cx,1
+	mov bx,82h
+	mov ah,2h			; wyświetlanie argumentów
+petla:					; WHILE(CX!=0) {
+	mov dl,es:[bx]
 	int 21h
-	loop petla
+	add bx,1
+	loop petla			; }
 	jcxz fin
 		; === Błąd: brak argumentu
 brak_arg:
