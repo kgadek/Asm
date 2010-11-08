@@ -8,7 +8,8 @@ dane1	ends
 
 
 code1	segment ;____________________________________________________________
-start:	; === inicjowanie stosu
+start:
+		; === inicjowanie stosu
 	mov	ax,seg top1		; segment stosu -> SS
 	mov	ss,ax
 	mov	sp,offset top1	; offset stosu -> SP
@@ -26,15 +27,18 @@ petla:							; 	WHILE(CX!=0) {
 	add bx,1					;		zwiększ offset BX
 	loop petla					; 	}
 	jcxz fin					; } else {
-		; === Błąd: brak argumentu
+
+
+		; === Błąd: brak argumentów
 brak_arg:						;
 	mov ax, seg errBrakArg		; 	DS = segment komunikatu błędu
 	mov ds, ax
 	mov dx, offset errBrakArg	;	DX = offset komunikatu błędu
 	mov ah, 9					;	wypisz komunikat o błędzie
-	int 21h						; }
+	int 21h
 
-fin:	; === zakończ program
+		; === zakończ program
+fin:
 	mov	ax,04c00h
 	int	21h
 code1	ends
