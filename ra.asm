@@ -51,8 +51,9 @@ start:
 	jcxz err_noArg				; nie ma argumentów - błąd
 
 	mov cx, 10h					; startujemy wczytywanie do tablicy
+	xor ax, ax
 loop_A:
-	mov al, es:[si]				; AX = input
+	mov al, es:[si]				; AL = input
 	call debug_print1			; __dbg
 	cmp ax, 3ah					; if AX = ':'
 	jne lAi1
