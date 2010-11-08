@@ -18,8 +18,9 @@ start:
 	mov cl,es:80h				; CX=ilość bajtów argumentów
 	xor ch,ch
 	jcxz brak_arg				; jeśli nie ma argumentów - błąd
-	sub cx,1					; 	CX--
-	mov bx,82h					; 	BX = 82h (offset argumentów)
+	sub cx,1					; CX--
+	mov bx,82h					; BX = 82h (offset argumentów)
+	mov ah,2h					; 	wyświetlanie argumentów
 
 		; === Pominięcie ew. spacji na początku
 space_clean:
@@ -31,13 +32,11 @@ space_clean:
 	jcxz brak_arg				; argumentami były same spacje!
 	
 		; === Wyświetlenie napisu
-print:
-	mov ah,2h					; 	wyświetlanie argumentów
-petla:							; 	WHILE(CX!=0) {
+print:							; 	WHILE(CX!=0) {
 	mov dl,es:[bx]				;		DL przyjmuje kolejne znaki parametrów z wiersza poleceń
 	int 21h						;		wyświetl
 	add bx,1					;		zwiększ offset BX
-	loop petla					; 	}
+	loop print					; 	}
 	jcxz fin					; }
 
 
