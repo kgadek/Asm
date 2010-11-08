@@ -1,3 +1,4 @@
+.286
 ; Random Art generator
 ; autor: Konrad Gądek
 
@@ -51,44 +52,47 @@ start:
 
 	mov cx, 10h					; startujemy wczytywanie do tablicy
 loop_A:
-	mov ax, es:[si]				; AX = input
+	mov al, es:[si]				; AX = input
 	call debug_print1			; __dbg
-	cmp ax, 3ah
-	jne lAi1					; if AX != ':'
+	cmp ax, 3ah					; if AX = ':'
+	jne lAi1
 		mov bx, 0					; 	BX = 0
 		add si, 1					; 	SI = SI + 1
 		loop loop_A
 lAi1:
-	cmp ax, 30h					; if AX < '0' || AX > 'f'
-	jl err_BadArg				;	bad input
-	cmp ax, 66h
+	call debug_print1
+	cmp ax, '0' 				; if AX < '0' || AX > 'f'
+	jb err_BadArg				;	bad input
+	cmp ax, 'f'
 	ja err_BadArg
+	call debug_print1
 	cmp ax, 39h					; if AX <= '9'
-	ja lAi2
+	jb lAi2
 		sub ax, 30h				; 	AX = AX - '0'
 		jmp lA_operate			;	JMP
 lAi2:
+	call debug_print1
 	cmp ax, 61h					; if AX >= 'a'
-	jl lAi3
+	jb lAi3
 		sub ax, 57h				;	AX = AX - 'a' + 10
 		jmp lA_operate			;	JMP
 lAi3:
 	cmp ax, 41h					; if AX < 'A' || AX > 'F'
-	jl err_BadArg				;	bad input
+	jb err_BadArg				;	bad input
 	cmp ax, 46h
 	ja err_BadArg
 	sub ax, 37h					; AX = AX - 'A' + 10
 lA_operate:
 	mov dx, ds:[si]
-	imul dx, 10h
+	shl dx, 4
 	add dx, ax
 	mov ds:[si], dx
 	add bx, 1
 	cmp bx, 2
 	ja err_BadArg
 	cmp bx, 1
-	je loopA
-	loop loopA
+	je loop_A
+	loop loop_A
 	
 
 
