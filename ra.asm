@@ -14,19 +14,31 @@ start:
 	mov	ss,ax
 	mov	sp,offset top1	; offset stosu -> SP
 
-		; === Wyświetlenie napisu
+		; === Wczytywanie parametrów - ustawienia
 	mov cl,es:80h				; CX=ilość bajtów argumentów
 	xor ch,ch
-	jcxz brak_arg				; if(CX != 0) {
+	jcxz brak_arg				; jeśli nie ma argumentów - błąd
 	sub cx,1					; 	CX--
 	mov bx,82h					; 	BX = 82h (offset argumentów)
+
+		; === Pominięcie ew. spacji na początku
+space_clean:
+	mov dl,es:[bx]
+	cmp dl, 0020h				; sprawdź, czy jest to spacja
+	jne print
+	add bx, 1
+	loop space_clean
+	jcxz brak_arg				; argumentami były same spacje!
+	
+		; === Wyświetlenie napisu
+print:
 	mov ah,2h					; 	wyświetlanie argumentów
 petla:							; 	WHILE(CX!=0) {
 	mov dl,es:[bx]				;		DL przyjmuje kolejne znaki parametrów z wiersza poleceń
 	int 21h						;		wyświetl
 	add bx,1					;		zwiększ offset BX
 	loop petla					; 	}
-	jcxz fin					; } else {
+	jcxz fin					; }
 
 
 		; === Błąd: brak argumentów
