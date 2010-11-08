@@ -2,8 +2,12 @@
 ; autor: Konrad Gądek
 
 
-dane1	segment
-	errBrakArg	db "Blad: nie podano argumentow programu, podano ich niewlasciwa ilosc lub sa one niepoprawne.",10,13,'$'
+dane1	segment ;____________________________________________________________
+
+	errNoArg	db "Blad: nie podano argumentow programu.",10,13,'$'
+	errBadArg	db "Blad: nieprawidlowe dane wejsciowe.",10,13,'$'
+	errTooFewArg	db "Blad: za malo argumentow.",10,10,'$'
+	errTooMuchArg	db "Blad: za duzo argumentow.",10,10,'$'
 tab db	171 dup(0)	; tablica wyjściowa wraz z CR/LF
 	db '$'
 inp db	16 dup(0)	; tablica wejściowa
@@ -15,66 +19,97 @@ dane1	ends
 
 
 code1	segment ;____________________________________________________________
+
+debug_print1	proc near
+	push ax
+	push dx
+	
+	mov dx, ax
+	mov ah, 2h
+	int 21h
+
+	pop dx
+	pop ax
+	ret
+debug_print1	endp
+
+
 start:
-		; === inicjowanie
+		; === rozgrzewka
 	mov	ax, seg top1			; SS:[SP] - segment stosu
 	mov	ss, ax
-	mov	sp, offset top1	; offset stosu -> SP
+	mov	sp, offset top1			; offset stosu -> SP
 	mov ax, seg inp				; DS:[DI] - zapis do pamięci
 	mov ds, ax
 	mov di, offset inp
 	mov si, 82h					; ES:[SI] - odczyt z pamięci (SI=82h - offset argumentów)
 
 		; === Wczytywanie parametrów - ustawienia
-	mov cl, es:80h				; CX=ilość bajtów argumentów
 	xor ch, ch
-	jcxz brak_arg				; nie ma argumentów - błąd
+	mov cl, es:80h				; CX=ilość bajtów argumentów
+	jcxz err_noArg				; nie ma argumentów - błąd
 
-	xor bx,bx
-	mov ah, 2h
+	mov cx, 10h					; startujemy wczytywanie do tablicy
+loop_A:
+	mov ax, es:[si]				; AX = input
+	call debug_print1			; __dbg
+	cmp ax, 3ah
+	jne lAi1					; if AX != ':'
+		mov bx, 0					; 	BX = 0
+		add si, 1					; 	SI = SI + 1
+		loop loop_A
+lAi1:
+	cmp ax, 30h					; if AX < '0' || AX > 'f'
+	jl err_BadArg				;	bad input
+	cmp ax, 66h
+	ja err_BadArg
+	cmp ax, 39h					; if AX <= '9'
+	ja lAi2
+		sub ax, 30h				; 	AX = AX - '0'
+		jmp lA_operate			;	JMP
+lAi2:
+	cmp ax, 61h					; if AX >= 'a'
+	jl lAi3
+		sub ax, 57h				;	AX = AX - 'a' + 10
+		jmp lA_operate			;	JMP
+lAi3:
+	cmp ax, 41h					; if AX < 'A' || AX > 'F'
+	jl err_BadArg				;	bad input
+	cmp ax, 46h
+	ja err_BadArg
+	sub ax, 37h					; AX = AX - 'A' + 10
+lA_operate:
+	mov dx, ds:[si]
+	imul dx, 10h
+	add dx, ax
+	mov ds:[si], dx
+	add bx, 1
+	cmp bx, 2
+	ja err_BadArg
+	cmp bx, 1
+	je loopA
+	loop loopA
+	
 
-		; === Pominięcie ew. spacji na początku
-space_clean:
-	mov dl,es:[si]
-	cmp dl, 20h					; sprawdź, czy jest to spacja
-	jne read_input
-	add si, 1
-	loop space_clean
-	jcxz brak_arg				; argumentami były same spacje!
 
-		; === Wczytywanie danych
-read_input:
-
-		; === Wyświetlenie napisu
-print:							; 	WHILE(CX!=0)
-	mov dl,es:[si]				;		DL przyjmuje kolejne znaki parametrów z wiersza poleceń
-	cmp bx, 0					;		jeśli BX=0 to wyświetl
-	je print_show
-	cmp dl, 20h
-	je print_cont
-	xor bx, bx
-print_show:
-	cmp dl, 20h					; 		jeśli wyświetlam spacje to BX=1
-	jne print_show_print
-	mov bx, 1
-print_show_print:
-	int 21h
-print_cont:
-	add si, 1
-	loop print
-	mov dl,es:[si]
-	cmp dl, 13
-	je fin
-	mov dx,'%'
-	int 21h
-	jcxz fin					; zakończ program
+	jmp fin
 
 
 		; === Błąd: brak argumentów
-brak_arg:						;
-	mov ax, seg errBrakArg		; 	DS = segment komunikatu błędu
+err_NoArg:						;
+	mov dx, offset errNoArg		;	DX = offset komunikatu błędu
+	jmp err_cont
+err_BadArg:						;
+	mov dx, offset errBadArg	;	DX = offset komunikatu błędu
+	jmp err_cont
+err_TooFewArg:					;
+	mov dx, offset errTooFewArg	;	DX = offset komunikatu błędu
+	jmp err_cont
+err_TooMuchArg:					;
+	mov dx, offset errTooMuchArg;	DX = offset komunikatu błędu
+err_cont:
+	mov ax, seg errNoArg		; 	DS = segment komunikatu błędu
 	mov ds, ax
-	mov dx, offset errBrakArg	;	DX = offset komunikatu błędu
 	mov ah, 9					;	wypisz komunikat o błędzie
 	int 21h
 
@@ -88,6 +123,5 @@ code1	ends
 stos1	segment STACK ;______________________________________________________
 top1	dw ?
 stos1	ends
-
 end start
 
