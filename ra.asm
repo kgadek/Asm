@@ -19,23 +19,23 @@ start:
 	xor ch,ch
 	jcxz brak_arg				; jeśli nie ma argumentów - błąd
 	sub cx,1					; CX--
-	mov bx,82h					; BX = 82h (offset argumentów)
+	mov si,82h					; SI = 82h (offset argumentów)
 	mov ah,2h					; 	wyświetlanie argumentów
 
 		; === Pominięcie ew. spacji na początku
 space_clean:
-	mov dl,es:[bx]
+	mov dl,es:[si]
 	cmp dl, 0020h				; sprawdź, czy jest to spacja
 	jne print
-	add bx, 1
+	add si, 1
 	loop space_clean
 	jcxz brak_arg				; argumentami były same spacje!
 	
 		; === Wyświetlenie napisu
 print:							; 	WHILE(CX!=0) {
-	mov dl,es:[bx]				;		DL przyjmuje kolejne znaki parametrów z wiersza poleceń
+	mov dl,es:[si]				;		DL przyjmuje kolejne znaki parametrów z wiersza poleceń
 	int 21h						;		wyświetl
-	add bx,1					;		zwiększ offset BX
+	add si,1					;		zwiększ offset BX
 	loop print					; 	}
 	jcxz fin					; }
 
