@@ -25,7 +25,8 @@ debug_print1	proc near
 	push ax
 	push dx
 	
-	mov dx, ax
+	xor dx, dx
+	mov dl, al
 	mov ah, 2h
 	int 21h
 
@@ -33,6 +34,30 @@ debug_print1	proc near
 	pop ax
 	ret
 debug_print1	endp
+debug_print2	proc near
+	push ax
+	push dx
+	mov ah, 2h
+	mov dx, 0ah
+	int 21h
+	mov dx, 0dh
+	int 21h
+	mov dx, '#'
+	int 21h
+	pop dx
+	pop ax
+	ret
+debug_print2	endp
+debug_print3	proc near
+	push ax
+	push dx
+	mov dx, '*'
+	mov ah, 2h
+	int 21h
+	pop dx
+	pop ax
+	ret
+debug_print3	endp
 
 
 start:
@@ -51,51 +76,51 @@ start:
 	jcxz err_noArg				; nie ma argumentów - błąd
 
 	mov cx, 10h					; startujemy wczytywanie do tablicy
-	xor ax, ax
 loop_A:
+	call debug_print2
 	mov al, es:[si]				; AL = input
-	call debug_print1			; __dbg
-	cmp ax, 3ah					; if AX = ':'
+	xor ah, ah
+	call debug_print1
+	cmp al, ':' 				; if AX = ':'
 	jne lAi1
+lAi1b:
+		call debug_print3
 		mov bx, 0					; 	BX = 0
 		add si, 1					; 	SI = SI + 1
 		loop loop_A
 lAi1:
-	call debug_print1
-	cmp ax, '0' 				; if AX < '0' || AX > 'f'
+	cmp al, '0' 				; if AX < '0' || AX > 'f'
 	jb err_BadArg				;	bad input
-	cmp ax, 'f'
-	ja err_BadArg
-	call debug_print1
-	cmp ax, 39h					; if AX <= '9'
-	jb lAi2
-		sub ax, 30h				; 	AX = AX - '0'
+	cmp al, 'f'
+	jg err_BadArg
+	cmp al, '9'					; if AX <= '9'
+	jle lAi2
+		sub al, '0'				; 	AX = AX - '0'
 		jmp lA_operate			;	JMP
 lAi2:
-	call debug_print1
-	cmp ax, 61h					; if AX >= 'a'
-	jb lAi3
-		sub ax, 57h				;	AX = AX - 'a' + 10
+	cmp al, 'a'					; if AX >= 'a'
+	jge lAi3
+		sub al, 57h				;	AX = AX - 'a' + 10
 		jmp lA_operate			;	JMP
 lAi3:
-	cmp ax, 41h					; if AX < 'A' || AX > 'F'
+	cmp al, 'A'					; if AX < 'A' || AX > 'F'
 	jb err_BadArg				;	bad input
-	cmp ax, 46h
+	cmp al, 46h
 	ja err_BadArg
-	sub ax, 37h					; AX = AX - 'A' + 10
+	sub al, 37h					; AX = AX - 'A' + 10
 lA_operate:
-	mov dx, ds:[si]
+	mov dx, ds:[si]				; tab[SI] = 16*tab[SI] + AX
 	shl dx, 4
 	add dx, ax
 	mov ds:[si], dx
-	add bx, 1
-	cmp bx, 2
-	ja err_BadArg
-	cmp bx, 1
-	je loop_A
-	loop loop_A
-	
-
+	add si, 1					; SI = SI + 1
+	add bx, 1					; BX = BX + 1
+	cmp bx, 2					; if BX > 2
+	jg err_BadArg				;	bad input
+	call debug_print1			; if BX < 2
+	jl loop_A					;	JMP
+	loop loop_A					; if BX == 2
+								;	LOOP
 
 	jmp fin
 
