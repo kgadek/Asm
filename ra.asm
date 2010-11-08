@@ -3,24 +3,30 @@
 
 
 dane1	segment
-	errBrakArg	db "Blad: nie podano argumentow programu lub sa one niepoprawne.",10,13,'$'
+	errBrakArg	db "Blad: nie podano argumentow programu, podano ich niewlasciwa ilosc lub sa one niepoprawne.",10,13,'$'
+inp db	16 dup(0)	; tablica wejściowa
+tab db	153 dup(0)	; tablica wyjściowa
+skd db	0			; sklej jednostronnie dolną krawędź
+skp db	0			; sklej jednostronnie prawą krawędź
+skg db	0			; sklej jednostronnie górną krawędź
+skl db	0			; sklej jednostronnie lewą krawędź
 dane1	ends
 
 
 code1	segment ;____________________________________________________________
 start:
 		; === inicjowanie stosu
-	mov	ax,seg top1		; segment stosu -> SS
-	mov	ss,ax
-	mov	sp,offset top1	; offset stosu -> SP
+	mov	ax, seg top1			; segment stosu -> SS
+	mov	ss, ax
+	mov	sp, offset top1	; offset stosu -> SP
 
 		; === Wczytywanie parametrów - ustawienia
-	mov cl,es:80h				; CX=ilość bajtów argumentów
-	xor ch,ch
+	mov cl, es:80h				; CX=ilość bajtów argumentów
+	xor ch, ch
 	jcxz brak_arg				; jeśli nie ma argumentów - błąd
-	sub cx,1					; CX--
-	mov si,82h					; SI = 82h (offset argumentów)
-	mov ah,2h					; wyświetlanie argumentów
+	sub cx, 1					; CX--
+	mov si, 82h					; SI = 82h (offset argumentów)
+	mov ah, 2h					; wyświetlanie argumentów
 	xor bx, bx					; czyszczenie licznika spacji
 
 		; === Pominięcie ew. spacji na początku
