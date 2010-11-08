@@ -4,8 +4,9 @@
 
 dane1	segment
 	errBrakArg	db "Blad: nie podano argumentow programu, podano ich niewlasciwa ilosc lub sa one niepoprawne.",10,13,'$'
+tab db	171 dup(0)	; tablica wyjściowa wraz z CR/LF
+	db '$'
 inp db	16 dup(0)	; tablica wejściowa
-tab db	153 dup(0)	; tablica wyjściowa
 skd db	0			; sklej jednostronnie dolną krawędź
 skp db	0			; sklej jednostronnie prawą krawędź
 skg db	0			; sklej jednostronnie górną krawędź
@@ -15,29 +16,35 @@ dane1	ends
 
 code1	segment ;____________________________________________________________
 start:
-		; === inicjowanie stosu
-	mov	ax, seg top1			; segment stosu -> SS
+		; === inicjowanie
+	mov	ax, seg top1			; SS:[SP] - segment stosu
 	mov	ss, ax
 	mov	sp, offset top1	; offset stosu -> SP
+	mov ax, seg inp				; DS:[DI] - zapis do pamięci
+	mov ds, ax
+	mov di, offset inp
+	mov si, 82h					; ES:[SI] - odczyt z pamięci (SI=82h - offset argumentów)
 
 		; === Wczytywanie parametrów - ustawienia
 	mov cl, es:80h				; CX=ilość bajtów argumentów
 	xor ch, ch
-	jcxz brak_arg				; jeśli nie ma argumentów - błąd
-	sub cx, 1					; CX--
-	mov si, 82h					; SI = 82h (offset argumentów)
-	mov ah, 2h					; wyświetlanie argumentów
-	xor bx, bx					; czyszczenie licznika spacji
+	jcxz brak_arg				; nie ma argumentów - błąd
+
+	xor bx,bx
+	mov ah, 2h
 
 		; === Pominięcie ew. spacji na początku
 space_clean:
 	mov dl,es:[si]
 	cmp dl, 20h					; sprawdź, czy jest to spacja
-	jne print
+	jne read_input
 	add si, 1
 	loop space_clean
 	jcxz brak_arg				; argumentami były same spacje!
-	
+
+		; === Wczytywanie danych
+read_input:
+
 		; === Wyświetlenie napisu
 print:							; 	WHILE(CX!=0)
 	mov dl,es:[si]				;		DL przyjmuje kolejne znaki parametrów z wiersza poleceń
@@ -55,6 +62,11 @@ print_show_print:
 print_cont:
 	add si, 1
 	loop print
+	mov dl,es:[si]
+	cmp dl, 13
+	je fin
+	mov dx,'%'
+	int 21h
 	jcxz fin					; zakończ program
 
 
