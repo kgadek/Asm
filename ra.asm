@@ -87,7 +87,7 @@ lAi1b:
 		call debug_print3
 		mov bx, 0					; 	BX = 0
 		add si, 1					; 	SI = SI + 1
-		loop loop_A
+		jmp loop_A
 lAi1:
 	cmp al, '0' 				; if AX < '0' || AX > 'f'
 	jb err_BadArg				;	bad input
