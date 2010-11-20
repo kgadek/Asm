@@ -82,27 +82,26 @@ loop_A:
 	xor ah, ah
 	call debug_print1
 	cmp al, ':' 				; if AX = ':'
-	jne lAi1
-lAi1b:
+	jne if_AXneq58
 		call debug_print3
 		mov bx, 0					; 	BX = 0
 		add si, 1					; 	SI = SI + 1
 		jmp loop_A
-lAi1:
+if_AXneq58:
 	cmp al, '0' 				; if AX < '0' || AX > 'f'
 	jb err_BadArg				;	bad input
 	cmp al, 'f'
 	jg err_BadArg
 	cmp al, '9'					; if AX <= '9'
-	jle lAi2
+	jle if_AXlt57
 		sub al, '0'				; 	AX = AX - '0'
 		jmp lA_operate			;	JMP
-lAi2:
+if_AXlt57:
 	cmp al, 'a'					; if AX >= 'a'
-	jge lAi3
+	jge if_AXgeq97
 		sub al, 57h				;	AX = AX - 'a' + 10
 		jmp lA_operate			;	JMP
-lAi3:
+if_AXgeq97:
 	cmp al, 'A'					; if AX < 'A' || AX > 'F'
 	jb err_BadArg				;	bad input
 	cmp al, 46h
@@ -128,16 +127,16 @@ lA_operate:
 		; === Błąd: brak argumentów
 err_NoArg:						;
 	mov dx, offset errNoArg		;	DX = offset komunikatu błędu
-	jmp err_cont
+	jmp err_common
 err_BadArg:						;
 	mov dx, offset errBadArg	;	DX = offset komunikatu błędu
-	jmp err_cont
+	jmp err_common
 err_TooFewArg:					;
 	mov dx, offset errTooFewArg	;	DX = offset komunikatu błędu
-	jmp err_cont
+	jmp err_common
 err_TooMuchArg:					;
 	mov dx, offset errTooMuchArg;	DX = offset komunikatu błędu
-err_cont:
+err_common:
 	mov ax, seg errNoArg		; 	DS = segment komunikatu błędu
 	mov ds, ax
 	mov ah, 9					;	wypisz komunikat o błędzie
