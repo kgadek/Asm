@@ -5,9 +5,9 @@ z05 * przechodzenie tablicy aa zgodnie z opisem
 z06 * wypisywanie tablicy aa
 z07 * usunięcie debug-printfów
 z08 * jeszcze więcej komentarzy
-z09 * zwiększyć stos
 z10 * reformatowanie kodu
 
 DONE:
+z09 * zwiększyć stos
 z01 * poprawić etykiety (nazwy lAi1 są nieakceptowalne)
 

@@ -150,6 +150,7 @@ code1	ends
 
 
 stos1	segment STACK ;______________________________________________________
+		dw 200 dup(?)
 top1	dw ?
 stos1	ends
 end start
