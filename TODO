@@ -1,0 +1,9 @@
+z01 * poprawić etykiety (nazwy lAi1 są nieakceptowalne)
+z02 * poprawić sprawdzanie tablicy
+z03 * dodać wczytywanie parametrów sklejania
+z04 * tworzenie tablicy aa
+z05 * przechodzenie tablicy aa zgodnie z opisem
+z06 * wypisywanie tablicy aa
+z07 * usunięcie debug-printfów
+z08 * jeszcze więcej komentarzy
+z09 * zwiększyć stos
