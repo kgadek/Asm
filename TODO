@@ -1,4 +1,3 @@
-z03 * dodać wczytywanie parametrów sklejania
 z04 * tworzenie tablicy aa
 z05 * przechodzenie tablicy aa zgodnie z opisem
 z06 * wypisywanie tablicy aa
@@ -7,6 +6,7 @@ z13 * przeniesienie operacji do procedur
 z14 * dokładniejsze informacje o błędach
 
 DONE:
+z03 * dodać wczytywanie parametrów sklejania
 z19 * dokładniejsze debug-info
 z15 * debug: wypisywanie liczby [0,255]
 z16 * napisać usuwacza spacji

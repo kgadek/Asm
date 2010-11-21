@@ -32,16 +32,6 @@ code1   segment ;____________________________________________________________
         pop ax
         ret
     debug_print1    endp
-    debug_print3    proc near
-        push ax
-        push dx
-        mov dx, '*'
-        mov ah, 2h
-        int 21h
-        pop dx
-        pop ax
-        ret
-    debug_print3    endp
 	wczytajBezSpacji proc near
 WBS_wczytaj:	mov al, es:[si]				; wczytaj znak
 				cmp al, ' '					; IF al = ' '
@@ -125,7 +115,7 @@ loop_A:         PRINTF <_>
                     mov bx, 0                   ;   BX = 0
                     add si, 1                   ;   SI = SI + 1
                     loop loop_A                 ;   wczytaj do następnego segmentu
-if_ALneq58:     cmp al, 0                   ; if AL = 0
+if_ALneq58:     cmp al, 13                   ; if AL = ENTER
                 jne if_ALneq0
                     jmp err_TooFewArg           ;   bad input
 err_noArg_posr: jmp err_noArg
@@ -168,7 +158,30 @@ lA_operate:     push bx                     ; zapamiętaj BX
                 cmp bx, 2                   ; if BX > 2
                 jg err_BadArg                   ;   bad input
                 jmp loop_A                  ; JMP loop_A
-lA_fin:         jmp fin
+lA_fin:         
+				
+					; === Wczytywanie parametrów - sklejenia
+				mov di, offset skd			; DS:[DI] - miejsce zapisu parametrów
+				xor ax, ax					; AX = 0
+				mov cx, 4					; CX = 4
+loop_B: 		call wczytajBezSpacji		; wczytaj
+				PRINTF <A>
+				cmp al, 13					; IF AL = ENTER
+				je err_TooFewArg				;	bad input
+				sub al, '0'
+				mov dx, ax					; wyświetl
+				call printDX
+				mov ds:[di], al				; zapamiętaj wczytaną wartość
+				add di, 1					; przesuń zapis o jedną pozycję w przód
+				add si, 1					; odczytuj następną wartość
+				loop loop_B					; powtórz
+
+				call wczytajBezSpacji		; wczytaj co pozostało
+				cmp al, 13					; IF AL != ENTER
+				jne err_TooMuchArg				;	bad input
+
+
+				jmp fin
     
     
             ; === Obsługa błędów
@@ -179,6 +192,7 @@ err_BadArg:     mov dx, offset errBadArg
 err_TooFewArg:  mov dx, offset errTooFewArg
                 jmp err_common
 err_TooMuchArg: mov dx, offset errTooMuchArg
+
 err_common:     mov ax, seg errNoArg        ;   DS = segment komunikatu błędu
                 mov ds, ax
                 mov ah, 9                   ;   wypisz komunikat o błędzie
