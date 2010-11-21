@@ -68,12 +68,13 @@ start:
 	mov ax, seg inp				; DS:[DI] - zapis do pamięci
 	mov ds, ax
 	mov di, offset inp
+	sub di, 82h
 	mov si, 82h					; ES:[SI] - odczyt z pamięci (SI=82h - offset argumentów)
 
 		; === Wczytywanie parametrów - ustawienia
 	xor ch, ch
 	mov cl, es:80h				; CX=ilość bajtów argumentów
-	jcxz err_noArg				; nie ma argumentów - błąd
+	jcxz err_noArg_posr			; nie ma argumentów - błąd
 
 	mov cx, 10h					; startujemy wczytywanie do tablicy
 loop_A:
@@ -81,46 +82,66 @@ loop_A:
 	mov al, es:[si]				; AL = input
 	xor ah, ah
 	call debug_print1
-	cmp al, ':' 				; if AX = ':'
-	jne if_AXneq58
+	cmp al, ':' 				; if AL = ':'
+	jne if_ALneq58
 		call debug_print3
 		mov bx, 0					; 	BX = 0
 		add si, 1					; 	SI = SI + 1
-		jmp loop_A
-if_AXneq58:
-	cmp al, '0' 				; if AX < '0' || AX > 'f'
-	jb err_BadArg				;	bad input
+		loop loop_A
+if_ALneq58:
+	cmp al, 0					; if AL = 0
+	jne if_ALneq0
+		jmp err_TooFewArg			;	bad input
+err_noArg_posr:
+		jmp err_noArg
+if_ALneq0:
+	cmp al, ' '					; if AL = ' '
+	jne if_ALneq32
+		cmp	cx, 1					;	if CX != 0
+		jne err_BadArg				;		bad input
+		jmp lA_fin
+if_ALneq32:
+	cmp al, '0' 				; if AL < '0' || AL > 'f'
+	call debug_print1
+	call debug_print2
+	call debug_print3
+	call debug_print1
+	call debug_print2
+	call debug_print3
+	jl err_BadArg				;	bad input
 	cmp al, 'f'
 	jg err_BadArg
-	cmp al, '9'					; if AX <= '9'
-	jle if_AXlt57
-		sub al, '0'				; 	AX = AX - '0'
+	cmp al, '9'					; if AL <= '9'
+	jg if_ALgt57
+		sub al, '0'				; 	AL = AL - '0'
 		jmp lA_operate			;	JMP
-if_AXlt57:
-	cmp al, 'a'					; if AX >= 'a'
-	jge if_AXgeq97
-		sub al, 57h				;	AX = AX - 'a' + 10
+if_ALgt57:
+	cmp al, 'a'					; if AL >= 'a'
+	jb if_ALle97
+		sub al, 'a'-10			;	AL = AL - 'a' + 10
 		jmp lA_operate			;	JMP
-if_AXgeq97:
-	cmp al, 'A'					; if AX < 'A' || AX > 'F'
-	jb err_BadArg				;	bad input
+if_ALle97:
+	cmp al, 'A'					; if AL < 'A' || AL > 'F'
+	jl err_BadArg				;	bad input
 	cmp al, 46h
-	ja err_BadArg
-	sub al, 37h					; AX = AX - 'A' + 10
+	jg err_BadArg
+	sub al, 'A'-10				; AX = AX - 'A' + 10
 lA_operate:
-	mov dx, ds:[si]				; tab[SI] = 16*tab[SI] + AX
+	push bx
+	mov bx, 10h
+	sub bx, cx
+	mov dx, ds:[bx+di]			; tab[16-CX] = 16*tab[16-CX] + AX
 	shl dx, 4
 	add dx, ax
-	mov ds:[si], dx
+	mov ds:[bx+di], dx
+	pop bx
 	add si, 1					; SI = SI + 1
 	add bx, 1					; BX = BX + 1
 	cmp bx, 2					; if BX > 2
 	jg err_BadArg				;	bad input
-	call debug_print1			; if BX < 2
-	jl loop_A					;	JMP
-	loop loop_A					; if BX == 2
-								;	LOOP
-
+	call debug_print1			;
+	jmp loop_A					; JMP loop_A
+lA_fin:
 	jmp fin
 
 
