@@ -64,6 +64,26 @@ WBS_wczytaj:	mov al, es:[si]				; wczytaj znak
 				jmp WBS_wczytaj					;	powtórz
 WBS_wczytano:	ret							; zakończ
 	wczytajBezSpacji endp
+	printDX proc near
+				push ax						; zapamiętaj wartości AX, BX, DX
+				push bx
+				push dx
+				mov ax, 80h					; AX = (10000000)b
+PDX_loop:		mov bx, ax					; BX = AX
+				and ax, dx					; AX = AX & DX
+				mov dx, '0'					; DX = '0'/'1'
+				jz PDX_notOne
+					mov dx, '1'
+PDX_notOne:		mov ah, 2h
+				int 21h
+				mov ax, bx
+				shr ax, 1					; AX >>= 1
+				jnc PDX_loop				; IF AX != 0: powtórz
+				pop dx						; przywróć wartość DX, BX, AX
+				pop bx
+				pop ax
+				ret	
+	printDX endp
     
                     ; === rozgrzewka
 start:          mov ax, seg top1            ; SS:[SP] - segment stosu
@@ -112,7 +132,7 @@ if_ALneq32:     cmp al, '0'                 ; if AL < '0' || AL > 'f'
 if_ALgt57:      cmp al, 'a'                 ; if AL >= 'a'
                 jl if_ALle97
                     sub al, 'a'-10              ;   AL = AL - 'a' + 10
-                jmp lA_operate              ;   JMP
+                	jmp lA_operate              ;	JMP
 if_ALle97:      cmp al, 'A'                 ; if AL < 'A' || AL > 'F'
                 jl err_BadArg                   ;   bad input
                 cmp al, 46h

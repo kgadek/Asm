@@ -5,9 +5,9 @@ z06 * wypisywanie tablicy aa
 z07 * usunięcie debug-printfów
 z13 * przeniesienie operacji do procedur
 z14 * dokładniejsze informacje o błędach
-z15 * debug: wypisywanie liczby [0,255]
 
 DONE:
+z15 * debug: wypisywanie liczby [0,255]
 z16 * napisać usuwacza spacji
 z18 * sprawdzić, czy byłem konsekwentny w JL/JG vs JB/JA
 z10 * reformatowanie kodu
