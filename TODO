@@ -3,11 +3,11 @@ z04 * tworzenie tablicy aa
 z05 * przechodzenie tablicy aa zgodnie z opisem
 z06 * wypisywanie tablicy aa
 z07 * usunięcie debug-printfów
-z08 * jeszcze więcej komentarzy
-z10 * reformatowanie kodu
 z11 * wsteczne uzupełnianie/czytanie bufora
 
 DONE:
+z10 * reformatowanie kodu
+z08 * jeszcze więcej komentarzy
 z12 * porządki w strukturze katalogów
 z02 * poprawić sprawdzanie tablicy
 z09 * zwiększyć stos
