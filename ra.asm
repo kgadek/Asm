@@ -56,6 +56,14 @@ code1   segment ;____________________________________________________________
         pop ax
         ret
     debug_print3    endp
+	wczytajBezSpacji proc near
+WBS_wczytaj:	mov al, es:[si]				; wczytaj znak
+				cmp al, ' '					; IF al = ' '
+				jne WBS_wczytano
+				add si, 1						;	SI = SI + 1
+				jmp WBS_wczytaj					;	powtórz
+WBS_wczytano:	ret							; zakończ
+	wczytajBezSpacji endp
     
                     ; === rozgrzewka
 start:          mov ax, seg top1            ; SS:[SP] - segment stosu
@@ -73,6 +81,7 @@ start:          mov ax, seg top1            ; SS:[SP] - segment stosu
         
                     ; === Wczytywanie parametrów - hash
                 mov cx, 10h                 ; wczytujemy 16 elementów
+				call wczytajBezSpacji		; pomiń spacje na początku
 loop_A:         call debug_print2
                 mov al, es:[si]             ; AL = input
                 xor ah, ah                  ; AH = 0
@@ -101,7 +110,7 @@ if_ALneq32:     cmp al, '0'                 ; if AL < '0' || AL > 'f'
                     sub al, '0'                 ;   AL = AL - '0'
                     jmp lA_operate              ;   JMP
 if_ALgt57:      cmp al, 'a'                 ; if AL >= 'a'
-                jb if_ALle97
+                jl if_ALle97
                     sub al, 'a'-10              ;   AL = AL - 'a' + 10
                 jmp lA_operate              ;   JMP
 if_ALle97:      cmp al, 'A'                 ; if AL < 'A' || AL > 'F'
