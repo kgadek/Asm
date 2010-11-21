@@ -7,6 +7,7 @@ z13 * przeniesienie operacji do procedur
 z14 * dokładniejsze informacje o błędach
 
 DONE:
+z19 * dokładniejsze debug-info
 z15 * debug: wypisywanie liczby [0,255]
 z16 * napisać usuwacza spacji
 z18 * sprawdzić, czy byłem konsekwentny w JL/JG vs JB/JA

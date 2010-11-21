@@ -32,20 +32,6 @@ code1   segment ;____________________________________________________________
         pop ax
         ret
     debug_print1    endp
-    debug_print2    proc near
-        push ax
-        push dx
-        mov ah, 2h
-        mov dx, 0ah
-        int 21h
-        mov dx, 0dh
-        int 21h
-        mov dx, '#'
-        int 21h
-        pop dx
-        pop ax
-        ret
-    debug_print2    endp
     debug_print3    proc near
         push ax
         push dx
@@ -65,25 +51,53 @@ WBS_wczytaj:	mov al, es:[si]				; wczytaj znak
 WBS_wczytano:	ret							; zakończ
 	wczytajBezSpacji endp
 	printDX proc near
-				push ax						; zapamiętaj wartości AX, BX, DX
+				push ax						; zapamiętaj wartości AX, BX, DX, CX
 				push bx
 				push dx
-				mov ax, 80h					; AX = (10000000)b
-PDX_loop:		mov bx, ax					; BX = AX
+				push cx
+				mov cx, dx
+				mov ax, 1					; AX = 1
+PDX_loop:		mov dx, cx
+				mov bx, ax					; BX = AX
 				and ax, dx					; AX = AX & DX
 				mov dx, '0'					; DX = '0'/'1'
 				jz PDX_notOne
-					mov dx, '1'
+				mov dx, '1'
 PDX_notOne:		mov ah, 2h
 				int 21h
 				mov ax, bx
-				shr ax, 1					; AX >>= 1
+				shl ax, 1					; AX >>= 1
 				jnc PDX_loop				; IF AX != 0: powtórz
-				pop dx						; przywróć wartość DX, BX, AX
+				pop cx						; przywróć wartość DX, BX, AX
+				pop dx
 				pop bx
 				pop ax
 				ret	
 	printDX endp
+	PRINTF MACRO str
+				push ax						; zapamiętaj wartości AX, DX
+				push dx
+				mov ah, 2h					; wypisywanie znaków
+				FORC arg,str				; wypisz każdy znak z łańcucha
+					mov dx,'&arg'
+					int 21h
+				ENDM
+				mov dx,10					; Wyświetl enter
+				int 21h
+				mov dx,13
+				int 21h
+				pop dx						; przywróć wartości DX, AX
+				pop ax
+	ENDM
+	PRINTREG MACRO reg
+				push ax						; zapamiętaj wartości AX, DX
+				push dx
+				mov dx,reg
+				mov ah, 2h					; wypisywanie znaków
+				int 21h
+				pop dx						; przywróć wartości DX, AX
+				pop ax
+	ENDM
     
                     ; === rozgrzewka
 start:          mov ax, seg top1            ; SS:[SP] - segment stosu
@@ -102,13 +116,12 @@ start:          mov ax, seg top1            ; SS:[SP] - segment stosu
                     ; === Wczytywanie parametrów - hash
                 mov cx, 10h                 ; wczytujemy 16 elementów
 				call wczytajBezSpacji		; pomiń spacje na początku
-loop_A:         call debug_print2
+loop_A:         PRINTF <_>
                 mov al, es:[si]             ; AL = input
                 xor ah, ah                  ; AH = 0
                 call debug_print1
                 cmp al, ':'                 ; if AL = ':'
                 jne if_ALneq58
-                    call debug_print3
                     mov bx, 0                   ;   BX = 0
                     add si, 1                   ;   SI = SI + 1
                     loop loop_A                 ;   wczytaj do następnego segmentu
@@ -139,18 +152,21 @@ if_ALle97:      cmp al, 'A'                 ; if AL < 'A' || AL > 'F'
                 jg err_BadArg
                 sub al, 'A'-10              ; AL = AL - 'A' + 10
 lA_operate:     push bx                     ; zapamiętaj BX
-                mov bx, 10h                 ; do bx: adres przetwarzanego elementu tablicy
+                mov bx, 0fh					; do bx: adres przetwarzanego elementu tablicy
                 sub bx, cx
+				PRINTF <A>
                 mov dx, ds:[bx+di]          ; tab[16-CX] = 16*tab[16-CX] + AX
+				call printDX
                 shl dx, 4
                 add dx, ax
+				PRINTF <B>
+				call printDX
                 mov ds:[bx+di], dx
                 pop bx                      ; przywróć BX
                 add si, 1                   ; SI = SI + 1
                 add bx, 1                   ; BX = BX + 1
                 cmp bx, 2                   ; if BX > 2
                 jg err_BadArg                   ;   bad input
-                call debug_print1
                 jmp loop_A                  ; JMP loop_A
 lA_fin:         jmp fin
     
