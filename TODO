@@ -8,6 +8,7 @@ z10 * reformatowanie kodu
 z11 * wsteczne uzupełnianie/czytanie bufora
 
 DONE:
+z12 * porządki w strukturze katalogów
 z02 * poprawić sprawdzanie tablicy
 z09 * zwiększyć stos
 z01 * poprawić etykiety (nazwy lAi1 są nieakceptowalne)
