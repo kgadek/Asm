@@ -6,6 +6,7 @@ z23 * na sam koniec: retab
 z24 * wpisanie znaków S/E w odpowiednie miejsce tablicy
 
 DONE:
+z26 * wypisywanie za pomocą jednej instrukcji
 z25 * dodanie nagłówka [ RSA 1024 ] do tabelki
 z20 * sprawdzić, czy tablica inp powinna być db czy dw
 z06 * wypisywanie tablicy aa

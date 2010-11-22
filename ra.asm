@@ -9,6 +9,7 @@ dane1   segment ;____________________________________________________________
     errTooFewArg    db "Blad: za malo argumentow.",10,10,'$'
     errTooMuchArg   db "Blad: za duzo argumentow.",10,10,'$'
     tab             db  231 dup(' ')  ; tablica wyjściowa wraz z CR/LF
+					db '$'
     inp             db  16 dup(0)   ; tablica wejściowa
     skd             db  0           ; sklej jednostronnie dolną krawędź
     skp             db  0           ; sklej jednostronnie prawą krawędź
@@ -184,7 +185,7 @@ loop_B:         call wczytajBezSpacji       ; wczytaj
                 jmp fillTab
     
     
-            ; === Obsługa błędów
+            		; === Obsługa błędów
 err_NoArg:      mov dx, offset errNoArg     ; DX = offset komunikatu błędu
                 jmp err_common
 err_BadArg:     mov dx, offset errBadArg
@@ -193,15 +194,13 @@ err_TooFewArg:  mov dx, offset errTooFewArg
                 jmp err_common
 err_TooMuchArg: mov dx, offset errTooMuchArg
 
-err_common:     mov ax, seg errNoArg        ; DS = segment komunikatu błędu
-                mov ds, ax
-                mov ah, 9                   ; wypisz komunikat o błędzie
+err_common:     mov ah, 9                   ; wypisz komunikat o błędzie
                 int 21h
 				mov ax,04c01h              	; zakończ program kodem 1
                 int 21h
 
 
-            ; === Wypełnij tablicę
+            		; === Wypełnij tablicę
 fillTab:        mov di, offset tab          ; DS:[DI] = adres tablicy tab
                 mov cx, 0bh                 ; Wypełnij część wspólną wszystkich wierszy
 fillK:          mov al, '|'                 ; wpisz znak | ...
@@ -221,9 +220,7 @@ fillK:          mov al, '|'                 ; wpisz znak | ...
 				mov ax, seg header			; ES:[SI] = adres przeznaczenia
 				mov es, ax
 				mov si, offset header
-				mov ax, seg tab				; DS:[DI] = adres źródła
-				mov ds, ax
-				mov di, offset tab
+				mov di, offset tab			; DS:[DI] = adres źródła
 				rep movsb					; przepisz
 
 					; === Wypełnij ostatni wiersz
@@ -233,14 +230,9 @@ fillK:          mov al, '|'                 ; wpisz znak | ...
 				rep movsb					; przepisz
 
                 PRINTF <#>
-printTab:       mov cx, 0E7h                ; wypisz każdą komórkę tabeli
-                mov di, offset tab
-                mov ah, 2h
-				xor dx, dx
-printLoop:      mov dl, ds:[di]             ; wypisz znak znajdujący się w tabeli               
-                int 21h
-                add di, 1                   ; przejdź na następny element i powtórz
-                loop printLoop
+printTab:		mov dx, offset tab			; DS:[DX] = adres tablicy wyjściowej
+				mov ah, 9					; wypisz za pomocą funkcji DOS-a 9h
+				int 21h
 
 
             ; === zakończ program
