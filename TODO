@@ -1,11 +1,12 @@
 z05 * przechodzenie tablicy aa zgodnie z opisem
 z22 * wypełnianie tablicy odpowiednimi znakami
-z07 * usunięcie debug-printfów
 z13 * przeniesienie operacji do procedur
-z14 * dokładniejsze informacje o błędach
-z21 * skorzystać z samomodyfikującego się kodu by uprościć program
+z07 * usunięcie debug-printfów
+z23 * na sam koniec: retab
+z24 * wpisanie znaków S/E w odpowiednie miejsce tablicy
 
 DONE:
+z25 * dodanie nagłówka [ RSA 1024 ] do tabelki
 z20 * sprawdzić, czy tablica inp powinna być db czy dw
 z06 * wypisywanie tablicy aa
 z04 * tworzenie tablicy aa
@@ -22,6 +23,8 @@ z09 * zwiększyć stos
 z01 * poprawić etykiety (nazwy lAi1 są nieakceptowalne)
 
 KOSZ:
+z21 * skorzystać z samomodyfikującego się kodu by uprościć program
+z14 * dokładniejsze informacje o błędach
 z17 * użyć makr MASM-a do ładniejszego zapisu if-ów
 z11 * wsteczne uzupełnianie/czytanie bufora
 

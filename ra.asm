@@ -14,6 +14,8 @@ dane1   segment ;____________________________________________________________
     skp             db  0           ; sklej jednostronnie prawą krawędź
     skg             db  0           ; sklej jednostronnie górną krawędź
     skl             db  0           ; sklej jednostronnie lewą krawędź
+	header			db	"+--[ RSA 1024]----+"
+	footer			db	"+-----------------+"
 dane1   ends
 
 
@@ -179,12 +181,11 @@ loop_B:         call wczytajBezSpacji       ; wczytaj
                 cmp al, 13                  ; IF AL != ENTER
                 jne err_TooMuchArg              ;   bad input
 
-
                 jmp fillTab
     
     
             ; === Obsługa błędów
-err_NoArg:      mov dx, offset errNoArg     ;   DX = offset komunikatu błędu
+err_NoArg:      mov dx, offset errNoArg     ; DX = offset komunikatu błędu
                 jmp err_common
 err_BadArg:     mov dx, offset errBadArg
                 jmp err_common
@@ -192,9 +193,11 @@ err_TooFewArg:  mov dx, offset errTooFewArg
                 jmp err_common
 err_TooMuchArg: mov dx, offset errTooMuchArg
 
-err_common:     mov ax, seg errNoArg        ;   DS = segment komunikatu błędu
+err_common:     mov ax, seg errNoArg        ; DS = segment komunikatu błędu
                 mov ds, ax
-                mov ah, 9                   ;   wypisz komunikat o błędzie
+                mov ah, 9                   ; wypisz komunikat o błędzie
+                int 21h
+				mov ax,04c01h              	; zakończ program kodem 1
                 int 21h
 
 
@@ -212,22 +215,22 @@ fillK:          mov al, '|'                 ; wpisz znak | ...
                 loop fillK
 				mov di, offset tab
 
- 	  			mov di, offset tab          ; DS:[DI] = adres tablicy tab
-                mov bx, 2                   ; Wypełnij górny i dolny wiersz
-fillGD:             mov al, '+'             ; wypełnij wiersz: +-----------------+
-					mov ds:[di], al				;	wpisz +
-					mov cx, 12h
-                    mov al, '-'					;	wpisz -
-fillW:              add di,1
-					mov ds:[di], al
-                    loop fillW
-					mov al, '+'					;	wpisz +
-					mov ds:[di], al
-                    add di, 0C0h            ; przeskocz do dolnego wiersza
-                    sub bx, 1
-                    cmp bx, 0               ; IF BX != 0
-                jnz fillGD                      ;   powtórz dla dolnego wiersza
+					; === Wypełnij pierwszy wiersz
+				mov cx, 13h					; uzupełnianie LENGTH(str) razy
+				cld							; w kierunku rosnących adresów
+				mov ax, seg header			; ES:[SI] = adres przeznaczenia
+				mov es, ax
+				mov si, offset header
+				mov ax, seg tab				; DS:[DI] = adres źródła
+				mov ds, ax
+				mov di, offset tab
+				rep movsb					; przepisz
 
+					; === Wypełnij ostatni wiersz
+				mov cx, 13h					; uzupełnianie LENGTH(str) razy
+				mov si, offset footer		; ES:[SI] = adres przeznaczenia
+				mov di, offset tab+210		; DS:[DI+210] = adres źródła (ostatni wiersz)
+				rep movsb					; przepisz
 
                 PRINTF <#>
 printTab:       mov cx, 0E7h                ; wypisz każdą komórkę tabeli
