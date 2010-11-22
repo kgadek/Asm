@@ -21,51 +21,6 @@ dane1   ends
 
 
 code1   segment ;____________________________________________________________
-    debug_print1    proc near
-        push ax
-        push dx
-        
-        xor dx, dx
-        mov dl, al
-        mov ah, 2h
-        int 21h
-    
-        pop dx
-        pop ax
-        ret
-    debug_print1    endp
-    wczytajBezSpacji proc near
-WBS_wczytaj:    mov al, es:[si]             ; wczytaj znak
-                cmp al, ' '                 ; IF al = ' '
-                jne WBS_wczytano
-                add si, 1                       ;   SI = SI + 1
-                jmp WBS_wczytaj                 ;   powtórz
-WBS_wczytano:   ret                         ; zakończ
-    wczytajBezSpacji endp
-    printDX proc near
-                push ax                     ; zapamiętaj wartości AX, BX, DX, CX
-                push bx
-                push dx
-                push cx
-                mov cx, dx
-                mov ax, 1                   ; AX = 1
-PDX_loop:       mov dx, cx
-                mov bx, ax                  ; BX = AX
-                and ax, dx                  ; AX = AX & DX
-                mov dx, '0'                 ; DX = '0'/'1'
-                jz PDX_notOne
-                mov dx, '1'
-PDX_notOne:     mov ah, 2h
-                int 21h
-                mov ax, bx
-                shl ax, 1                   ; AX >>= 1
-                jnc PDX_loop                ; IF AX != 0: powtórz
-                pop cx                      ; przywróć wartość DX, BX, AX
-                pop dx
-                pop bx
-                pop ax
-                ret 
-    printDX endp
     PRINTF MACRO str
                 push ax                     ; zapamiętaj wartości AX, DX
                 push dx
@@ -81,6 +36,51 @@ PDX_notOne:     mov ah, 2h
                 pop dx                      ; przywróć wartości DX, AX
                 pop ax
     ENDM
+    debug_print1    proc near
+        push ax
+        push dx
+        
+        xor dx, dx
+        mov dl, al
+        mov ah, 2h
+        int 21h
+    
+        pop dx
+        pop ax
+        ret
+    debug_print1    endp
+    wczytajBezSpacji proc near
+				PRINTF <wczBezSpacji>
+WBS_wczytaj:    mov al, es:[si]             ; wczytaj znak
+				PRINTF <wczBezSpacjiLoop>
+                cmp al, ' '                 ; IF al = ' '
+                jne WBS_wczytano
+                add si, 1                       ;   SI = SI + 1
+                jmp WBS_wczytaj                 ;   powtórz
+WBS_wczytano:   ret                         ; zakończ
+    wczytajBezSpacji endp
+    printDX proc near
+				FOR rej, <AX,BX,CX,DX>		; zapamiętaj wartości AX,BX,CX,DX
+					push rej
+				ENDM
+                mov cx, dx
+                mov ax, 1                   ; AX = 1
+PDX_loop:       mov dx, cx
+                mov bx, ax                  ; BX = AX
+                and ax, dx                  ; AX = AX & DX
+                mov dx, '0'                 ; DX = '0'/'1'
+                jz PDX_notOne
+                mov dx, '1'
+PDX_notOne:     mov ah, 2h
+                int 21h
+                mov ax, bx
+                shl ax, 1                   ; AX >>= 1
+                jnc PDX_loop                ; IF AX != 0: powtórz
+				FOR rej, <DX,CX,BX,AX>		; przywróć wartości DX,CX,BX,AX
+					pop rej
+				ENDM
+                ret 
+    printDX endp
     PRINTREG MACRO reg
                 push ax                     ; zapamiętaj wartości AX, DX
                 push dx
@@ -90,11 +90,119 @@ PDX_notOne:     mov ah, 2h
                 pop dx                      ; przywróć wartości DX, AX
                 pop ax
     ENDM
+	goUp proc near
+				PRINTF <GOUP>
+				sub bx, 2Ah					; BX = BX - 42 /przesuń się 2 wiersze wyżej/
+				jns goUp_fin				; IF BX < 0 /jeśli wyskoczyliśmy poza tablicę/
+					add bx, 15h					;	BX = BX + 21
+					push di						;	zapamiętaj DI
+					mov di, offset skg
+					mov al, ds:[di]
+					cmp al, 0
+					pop di						;	przywróć DI
+					jz goUp_fin					;	IF sklej_górę
+						add bx, 0A8h				;	BX = BX + 8*21
+goUp_fin:		add bx, 15h					; BX = BX + 21 /wróć wiersz wyżej/
+				PRINTF <GOUP_DONE>
+				ret
+	goUp endp
+	goDown proc near
+				PRINTF <GODOWN>
+				sub bx, 0BDh				; BX = BX - 189
+				js goDown_fin				; IF BX > 0 /jeśli byliśmy w ostaniej linii/
+					sub bx, 15h					;	BX = BX - 21
+					push di						;	zapamiętaj DI
+					mov di, offset skd
+					mov al, ds:[di]
+					cmp al, 0
+					pop di						;	przywróć DI
+					jz goDown_fin				;	IF sklej_dół
+						sub bx, 0A8h				;	BX = BX - 8*21
+goDown_fin:		add bx, 0D2h				; BX = BX + 189 + 21 /wróć wiersz wyżej/
+				PRINTF <GODOWN_DONE>
+				ret
+	goDown endp
+	goRight proc near
+				PRINTF <GORIGHT>
+				add bx, 1					; BX = BX + 1
+				push bx						; IF BX % 21 = 18
+				mov ax, bx
+				mov bl, 15h
+				div bl
+				pop bx
+				cmp bx, 12h
+				jnz goRight_fin
+					sub bx, 1					;	BX = BX - 1
+					push di						;	IF SKP
+					mov di, offset skp
+					mov al, ds:[di]
+					pop di
+					cmp al, 0
+					jz goRight_fin
+						sub bx, 10h					;	BX = BX - 16
+goRight_fin:	PRINTF <GORIGHT_DONE>
+				ret
+	goRight endp
+	goLeft proc near
+				PRINTF <GOLEFT>
+				sub bx, 1					; BX = BX - 1
+				push bx						; IF BX % 21 = 0
+				mov ax, bx
+				mov bl, 15h
+				div bl
+				pop bx
+				jnz goLeft_fin
+					add bx, 1					;	BX = BX + 1
+					push di						; IF SKL
+					mov di, offset skl
+					mov al, ds:[di]
+					pop di
+					cmp al, 0
+					jz goLeft_fin
+						add bx, 10h					;	BX = BX + 16
+goLeft_fin:		PRINTF <GOLEFT_DONE>
+				ret
+	goLeft endp
+	parseGroup proc near
+				PRINTF <Z>
+				FOR rej, <AX,BX,CX,DX>		; zapamiętaj wartości AX,BX,CX,DX
+					push rej
+				ENDM
+				mov cl,3					; CL=(0000 0011)b
+
+parseGroup_loop:mov al, 1					; tab[BX] = tab[BX]+1
+				PRINTF <Y>
+				add ds:[bx+di], al
+				mov al, cl					; AL = CL & DL
+				and al, dl
+				sub al, 2h					; AL = AL - 2
+				pushf
+				js parseGroup_g				; IF AL > 0
+				call goDown						;	goDown
+				jmp parseGroup_g			; else
+parseGroup_g:	call goUp						;	goUp
+parseGroup_gd:	popf
+				jp parseGroup_l				; IF AL!=0 (mod 2)
+				call goRight					;	goRight
+				jmp parseGroup_lp			; else
+parseGroup_l:	call goLeft						;	goLeft
+parseGroup_lp:	shl cl, 2					; CL = CL<<2
+				cmp cl, 0
+				PRINTF <X>
+				jnz parseGroup_loop			; powtórz
+
+				FOR rej, <DX,CX,BX,AX>		; przywróć wartości DX,CX,BX,AX
+					pop rej
+				ENDM
+				ret							; koniec
+	parseGroup endp
     
                     ; === rozgrzewka
-start:          mov ax, seg top1            ; SS:[SP] - segment stosu
+start:          
+				mov ax, seg top1            ; SS:[SP] - segment stosu
                 mov ss, ax
                 mov sp, offset top1
+				PRINTF <START>
                 mov ax, seg inp             ; DS:[DI] - zapis do pamięci
                 mov ds, ax
                 mov di, offset inp
@@ -117,6 +225,7 @@ loop_A:         PRINTF <_>
                     mov bx, 0                   ;   BX = 0
                     add si, 1                   ;   SI = SI + 1
                     loop loop_A                 ;   wczytaj do następnego segmentu
+					jmp err_TooMuchArg
 if_ALneq58:     cmp al, 13                   ; if AL = ENTER
                 jne if_ALneq0
                     jmp err_TooFewArg           ;   bad input
@@ -133,6 +242,7 @@ if_ALneq32:     cmp al, '0'                 ; if AL < '0' || AL > 'f'
                 cmp al, '9'                 ; if AL <= '9'
                 jg if_ALgt57
                     sub al, '0'                 ;   AL = AL - '0'
+					PRINTF <uno>
                     jmp lA_operate              ;   JMP
 if_ALgt57:      cmp al, 'a'                 ; if AL >= 'a'
                 jl if_ALle97
@@ -160,7 +270,7 @@ lA_operate:     push bx                     ; zapamiętaj BX
                 cmp bx, 2                   ; if BX > 2
                 jg err_BadArg                   ;   bad input
                 jmp loop_A                  ; JMP loop_A
-lA_fin:         
+lA_fin:         PRINTF <KONIEC_IN>
                 
                     ; === Wczytywanie parametrów - sklejenia
                 mov di, offset skd          ; DS:[DI] - miejsce zapisu parametrów
@@ -200,8 +310,9 @@ err_common:     mov ah, 9                   ; wypisz komunikat o błędzie
                 int 21h
 
 
-            		; === Wypełnij tablicę
-fillTab:        mov di, offset tab          ; DS:[DI] = adres tablicy tab
+            ; === Wypełnij tablicę
+fillTab:        PRINTF <FILL_TAB>
+				mov di, offset tab          ; DS:[DI] = adres tablicy tab
                 mov cx, 0bh                 ; Wypełnij część wspólną wszystkich wierszy
 fillK:          mov al, '|'                 ; wpisz znak | ...
                 mov ds:[di], al             ; ... w pierwszą
@@ -229,6 +340,21 @@ fillK:          mov al, '|'                 ; wpisz znak | ...
 				mov di, offset tab+210		; DS:[DI+210] = adres źródła (ostatni wiersz)
 				rep movsb					; przepisz
 
+				PRINTF <PREPARSE>
+
+					; === Wypełnij tablicę zgodnie z algorytmem
+parse:			mov di, offset tab			; DS:[DI] = tablica wynikowa
+				mov si, offset inp			; ES:[SI] = tablica z danymi
+				mov cx, 10h					; do przetworzenia jest 16 bloków
+				mov bx, 114					; ustaw wskaźnik tablicy BX na środek
+				xor dx, dx					; czyść bufor danych DX
+parse_loop:		mov dl, es:[si]				; wczytaj blok
+				PRINTF <INPARSELOOP>
+				add si, 1					; przygotuj się do wczytania następnego
+				call parseGroup				; wywołaj parseGroup(DX=dane_we)
+				loop parse_loop
+
+
                 PRINTF <#>
 printTab:		mov dx, offset tab			; DS:[DX] = adres tablicy wyjściowej
 				mov ah, 9					; wypisz za pomocą funkcji DOS-a 9h
@@ -236,13 +362,25 @@ printTab:		mov dx, offset tab			; DS:[DX] = adres tablicy wyjściowej
 
 
             ; === zakończ program
-fin:            mov ax,04c00h               ; zakończ program kodem 0
+fin:            PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				PRINTF </>
+				mov ax,04c00h               ; zakończ program kodem 0
                 int 21h
 code1   ends
 
 
 stos1   segment STACK ;______________________________________________________
-            dw 200 dup(?)
+            dw 400 dup(?)
     top1    dw ?
 stos1   ends
 
