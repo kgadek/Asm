@@ -1,11 +1,14 @@
-z04 * tworzenie tablicy aa
 z05 * przechodzenie tablicy aa zgodnie z opisem
-z06 * wypisywanie tablicy aa
+z22 * wypełnianie tablicy odpowiednimi znakami
 z07 * usunięcie debug-printfów
 z13 * przeniesienie operacji do procedur
 z14 * dokładniejsze informacje o błędach
+z21 * skorzystać z samomodyfikującego się kodu by uprościć program
 
 DONE:
+z20 * sprawdzić, czy tablica inp powinna być db czy dw
+z06 * wypisywanie tablicy aa
+z04 * tworzenie tablicy aa
 z03 * dodać wczytywanie parametrów sklejania
 z19 * dokładniejsze debug-info
 z15 * debug: wypisywanie liczby [0,255]

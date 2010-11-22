@@ -8,8 +8,7 @@ dane1   segment ;____________________________________________________________
     errBadArg       db "Blad: nieprawidlowe dane wejsciowe.",10,13,'$'
     errTooFewArg    db "Blad: za malo argumentow.",10,10,'$'
     errTooMuchArg   db "Blad: za duzo argumentow.",10,10,'$'
-    tab             db  171 dup(0)  ; tablica wyjściowa wraz z CR/LF
-                    db '$'
+    tab             db  231 dup(' ')  ; tablica wyjściowa wraz z CR/LF
     inp             db  16 dup(0)   ; tablica wejściowa
     skd             db  0           ; sklej jednostronnie dolną krawędź
     skp             db  0           ; sklej jednostronnie prawą krawędź
@@ -32,62 +31,62 @@ code1   segment ;____________________________________________________________
         pop ax
         ret
     debug_print1    endp
-	wczytajBezSpacji proc near
-WBS_wczytaj:	mov al, es:[si]				; wczytaj znak
-				cmp al, ' '					; IF al = ' '
-				jne WBS_wczytano
-				add si, 1						;	SI = SI + 1
-				jmp WBS_wczytaj					;	powtórz
-WBS_wczytano:	ret							; zakończ
-	wczytajBezSpacji endp
-	printDX proc near
-				push ax						; zapamiętaj wartości AX, BX, DX, CX
-				push bx
-				push dx
-				push cx
-				mov cx, dx
-				mov ax, 1					; AX = 1
-PDX_loop:		mov dx, cx
-				mov bx, ax					; BX = AX
-				and ax, dx					; AX = AX & DX
-				mov dx, '0'					; DX = '0'/'1'
-				jz PDX_notOne
-				mov dx, '1'
-PDX_notOne:		mov ah, 2h
-				int 21h
-				mov ax, bx
-				shl ax, 1					; AX >>= 1
-				jnc PDX_loop				; IF AX != 0: powtórz
-				pop cx						; przywróć wartość DX, BX, AX
-				pop dx
-				pop bx
-				pop ax
-				ret	
-	printDX endp
-	PRINTF MACRO str
-				push ax						; zapamiętaj wartości AX, DX
-				push dx
-				mov ah, 2h					; wypisywanie znaków
-				FORC arg,str				; wypisz każdy znak z łańcucha
-					mov dx,'&arg'
-					int 21h
-				ENDM
-				mov dx,10					; Wyświetl enter
-				int 21h
-				mov dx,13
-				int 21h
-				pop dx						; przywróć wartości DX, AX
-				pop ax
-	ENDM
-	PRINTREG MACRO reg
-				push ax						; zapamiętaj wartości AX, DX
-				push dx
-				mov dx,reg
-				mov ah, 2h					; wypisywanie znaków
-				int 21h
-				pop dx						; przywróć wartości DX, AX
-				pop ax
-	ENDM
+    wczytajBezSpacji proc near
+WBS_wczytaj:    mov al, es:[si]             ; wczytaj znak
+                cmp al, ' '                 ; IF al = ' '
+                jne WBS_wczytano
+                add si, 1                       ;   SI = SI + 1
+                jmp WBS_wczytaj                 ;   powtórz
+WBS_wczytano:   ret                         ; zakończ
+    wczytajBezSpacji endp
+    printDX proc near
+                push ax                     ; zapamiętaj wartości AX, BX, DX, CX
+                push bx
+                push dx
+                push cx
+                mov cx, dx
+                mov ax, 1                   ; AX = 1
+PDX_loop:       mov dx, cx
+                mov bx, ax                  ; BX = AX
+                and ax, dx                  ; AX = AX & DX
+                mov dx, '0'                 ; DX = '0'/'1'
+                jz PDX_notOne
+                mov dx, '1'
+PDX_notOne:     mov ah, 2h
+                int 21h
+                mov ax, bx
+                shl ax, 1                   ; AX >>= 1
+                jnc PDX_loop                ; IF AX != 0: powtórz
+                pop cx                      ; przywróć wartość DX, BX, AX
+                pop dx
+                pop bx
+                pop ax
+                ret 
+    printDX endp
+    PRINTF MACRO str
+                push ax                     ; zapamiętaj wartości AX, DX
+                push dx
+                mov ah, 2h                  ; wypisywanie znaków
+                FORC arg,str                ; wypisz każdy znak z łańcucha
+                    mov dx,'&arg'
+                    int 21h
+                ENDM
+                mov dx,10                   ; Wyświetl enter
+                int 21h
+                mov dx,13
+                int 21h
+                pop dx                      ; przywróć wartości DX, AX
+                pop ax
+    ENDM
+    PRINTREG MACRO reg
+                push ax                     ; zapamiętaj wartości AX, DX
+                push dx
+                mov dx,reg
+                mov ah, 2h                  ; wypisywanie znaków
+                int 21h
+                pop dx                      ; przywróć wartości DX, AX
+                pop ax
+    ENDM
     
                     ; === rozgrzewka
 start:          mov ax, seg top1            ; SS:[SP] - segment stosu
@@ -105,7 +104,7 @@ start:          mov ax, seg top1            ; SS:[SP] - segment stosu
         
                     ; === Wczytywanie parametrów - hash
                 mov cx, 10h                 ; wczytujemy 16 elementów
-				call wczytajBezSpacji		; pomiń spacje na początku
+                call wczytajBezSpacji       ; pomiń spacje na początku
 loop_A:         PRINTF <_>
                 mov al, es:[si]             ; AL = input
                 xor ah, ah                  ; AH = 0
@@ -135,23 +134,23 @@ if_ALneq32:     cmp al, '0'                 ; if AL < '0' || AL > 'f'
 if_ALgt57:      cmp al, 'a'                 ; if AL >= 'a'
                 jl if_ALle97
                     sub al, 'a'-10              ;   AL = AL - 'a' + 10
-                	jmp lA_operate              ;	JMP
+                    jmp lA_operate              ;   JMP
 if_ALle97:      cmp al, 'A'                 ; if AL < 'A' || AL > 'F'
                 jl err_BadArg                   ;   bad input
                 cmp al, 46h
                 jg err_BadArg
                 sub al, 'A'-10              ; AL = AL - 'A' + 10
 lA_operate:     push bx                     ; zapamiętaj BX
-                mov bx, 0fh					; do bx: adres przetwarzanego elementu tablicy
+                mov bx, 0fh                 ; do bx: adres przetwarzanego elementu tablicy
                 sub bx, cx
-				PRINTF <A>
-                mov dx, ds:[bx+di]          ; tab[16-CX] = 16*tab[16-CX] + AX
-				call printDX
-                shl dx, 4
-                add dx, ax
-				PRINTF <B>
-				call printDX
-                mov ds:[bx+di], dx
+                PRINTF <A>
+                mov dl, ds:[bx+di]          ; tab[16-CX] = 16*tab[16-CX] + AX
+                call printDX
+                shl dl, 4
+                add dl, al
+                PRINTF <B>
+                call printDX
+                mov ds:[bx+di], dl
                 pop bx                      ; przywróć BX
                 add si, 1                   ; SI = SI + 1
                 add bx, 1                   ; BX = BX + 1
@@ -159,29 +158,29 @@ lA_operate:     push bx                     ; zapamiętaj BX
                 jg err_BadArg                   ;   bad input
                 jmp loop_A                  ; JMP loop_A
 lA_fin:         
-				
-					; === Wczytywanie parametrów - sklejenia
-				mov di, offset skd			; DS:[DI] - miejsce zapisu parametrów
-				xor ax, ax					; AX = 0
-				mov cx, 4					; CX = 4
-loop_B: 		call wczytajBezSpacji		; wczytaj
-				PRINTF <A>
-				cmp al, 13					; IF AL = ENTER
-				je err_TooFewArg				;	bad input
-				sub al, '0'
-				mov dx, ax					; wyświetl
-				call printDX
-				mov ds:[di], al				; zapamiętaj wczytaną wartość
-				add di, 1					; przesuń zapis o jedną pozycję w przód
-				add si, 1					; odczytuj następną wartość
-				loop loop_B					; powtórz
+                
+                    ; === Wczytywanie parametrów - sklejenia
+                mov di, offset skd          ; DS:[DI] - miejsce zapisu parametrów
+                xor ax, ax                  ; AX = 0
+                mov cx, 4                   ; CX = 4
+loop_B:         call wczytajBezSpacji       ; wczytaj
+                PRINTF <A>
+                cmp al, 13                  ; IF AL = ENTER
+                je err_TooFewArg                ;   bad input
+                sub al, '0'
+                mov dx, ax                  ; wyświetl
+                call printDX
+                mov ds:[di], al             ; zapamiętaj wczytaną wartość
+                add di, 1                   ; przesuń zapis o jedną pozycję w przód
+                add si, 1                   ; odczytuj następną wartość
+                loop loop_B                 ; powtórz
 
-				call wczytajBezSpacji		; wczytaj co pozostało
-				cmp al, 13					; IF AL != ENTER
-				jne err_TooMuchArg				;	bad input
+                call wczytajBezSpacji       ; wczytaj co pozostało
+                cmp al, 13                  ; IF AL != ENTER
+                jne err_TooMuchArg              ;   bad input
 
 
-				jmp fin
+                jmp fillTab
     
     
             ; === Obsługa błędów
@@ -197,6 +196,48 @@ err_common:     mov ax, seg errNoArg        ;   DS = segment komunikatu błędu
                 mov ds, ax
                 mov ah, 9                   ;   wypisz komunikat o błędzie
                 int 21h
+
+
+            ; === Wypełnij tablicę
+fillTab:        mov di, offset tab          ; DS:[DI] = adres tablicy tab
+                mov cx, 0bh                 ; Wypełnij część wspólną wszystkich wierszy
+fillK:          mov al, '|'                 ; wpisz znak | ...
+                mov ds:[di], al             ; ... w pierwszą
+                mov ds:[di+18], al          ; ... oraz ostatnią kolumnę
+                mov al, 10                  ; dopisz CR
+                mov ds:[di+19], al
+                mov al, 13                  ; dopisz LF
+                mov ds:[di+20], al
+                add di, 15h                 ; przejdź do następnego wiersza
+                loop fillK
+				mov di, offset tab
+
+ 	  			mov di, offset tab          ; DS:[DI] = adres tablicy tab
+                mov bx, 2                   ; Wypełnij górny i dolny wiersz
+fillGD:             mov al, '+'             ; wypełnij wiersz: +-----------------+
+					mov ds:[di], al				;	wpisz +
+					mov cx, 12h
+                    mov al, '-'					;	wpisz -
+fillW:              add di,1
+					mov ds:[di], al
+                    loop fillW
+					mov al, '+'					;	wpisz +
+					mov ds:[di], al
+                    add di, 0C0h            ; przeskocz do dolnego wiersza
+                    sub bx, 1
+                    cmp bx, 0               ; IF BX != 0
+                jnz fillGD                      ;   powtórz dla dolnego wiersza
+
+
+                PRINTF <#>
+printTab:       mov cx, 0E7h                ; wypisz każdą komórkę tabeli
+                mov di, offset tab
+                mov ah, 2h
+				xor dx, dx
+printLoop:      mov dl, ds:[di]             ; wypisz znak znajdujący się w tabeli               
+                int 21h
+                add di, 1                   ; przejdź na następny element i powtórz
+                loop printLoop
 
 
             ; === zakończ program
