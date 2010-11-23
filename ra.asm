@@ -17,6 +17,7 @@ dane1   segment ;____________________________________________________________
     skl             db  0           ; sklej jednostronnie lewą krawędź
 	header			db	"+--[ RSA 1024]----+"
 	footer			db	"+-----------------+"
+	exch			db	".o+=*BOX@%&#/^"
 dane1   ends
 
 
