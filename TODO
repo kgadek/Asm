@@ -1,9 +1,9 @@
 z13 * przeniesienie operacji do procedur
-z07 * usunięcie debug-printfów
 z23 * na sam koniec: retab, poprawienie czytelności
 z24 * wpisanie znaków S/E w odpowiednie miejsce tablicy
 
 DONE:
+z07 * usunięcie debug-printfów
 z22 * wypełnianie tablicy odpowiednimi znakami
 z26 * wypisywanie za pomocą jednej instrukcji
 z05 * przechodzenie tablicy aa zgodnie z opisem
