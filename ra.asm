@@ -8,7 +8,8 @@ dane1   segment ;____________________________________________________________
     errBadArg       db "Blad: nieprawidlowe dane wejsciowe.",10,13,'$'
     errTooFewArg    db "Blad: za malo argumentow.",10,10,'$'
     errTooMuchArg   db "Blad: za duzo argumentow.",10,10,'$'
-    tab             db  231 dup(' ')  ; tablica wyjściowa wraz z CR/LF
+    tab             db  231 dup(0)  ; tablica wyjściowa wraz z CR/LF
+					db '$'
 					db '$'
     inp             db  16 dup(0)   ; tablica wejściowa
     skd             db  0           ; sklej jednostronnie dolną krawędź
@@ -17,7 +18,7 @@ dane1   segment ;____________________________________________________________
     skl             db  0           ; sklej jednostronnie lewą krawędź
 	header			db	"+--[ RSA 1024]----+"
 	footer			db	"+-----------------+"
-	exch			db	".o+=*BOX@%&#/^"
+	exch			db	" .o+=*BOX@%&#/^"
 dane1   ends
 
 
@@ -355,6 +356,25 @@ parse_loop:		mov dl, es:[si]				; wczytaj blok
 				call parseGroup				; wywołaj parseGroup(DX=dane_we)
 				loop parse_loop
 
+
+					; === Zamień ilość wejść na odpowiedni znak ASCII
+				mov cx, 9					; CX = 9 /Przetwórz 9 wierszy tablicy/
+				mov ax, seg exch			; DS:[BP+SI] = adres tablicy przemiany
+				mov ds, ax
+				mov si, offset exch
+				mov di, offset tab			; DS:[BX+DI] = adres komórek tablicy
+exchange_loop:	add di, 15h
+				mov bx, 11h					; dla każdej kolumny 1..17 (w odwrotnej kolejności)
+exch_inn_loop:	mov dl, ds:[bx+di]
+				cmp dl, 0Eh					; IF DL > 14
+				jle exch_nosub
+				mov dl, 0Eh						;	DL = 14
+exch_nosub:		mov bp, dx
+				mov dl, ds:[bp+si]
+				mov ds:[bx+di], dl
+				sub bx, 1					; kolejna kolumna
+				jnz exch_inn_loop
+				loop exchange_loop
 
                 PRINTF <#>
 printTab:		mov dx, offset tab			; DS:[DX] = adres tablicy wyjściowej
