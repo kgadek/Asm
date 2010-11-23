@@ -3,6 +3,7 @@ z23 * na sam koniec: retab, poprawienie czytelności
 z24 * wpisanie znaków S/E w odpowiednie miejsce tablicy
 
 DONE:
+z27 * poprawienie błędu w przechodzeniu tablicy
 z07 * usunięcie debug-printfów
 z22 * wypełnianie tablicy odpowiednimi znakami
 z26 * wypisywanie za pomocą jednej instrukcji
