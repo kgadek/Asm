@@ -35,13 +35,13 @@ WBS_wczytano:   ret                         ; zakończ
                 sub bx, 2Ah                 ; BX = BX - 42 /przesuń się 2 wiersze wyżej/
                 jns goUp_fin                ; IF BX < 0 /jeśli wyskoczyliśmy poza tablicę/
                     add bx, 15h                 ;   BX = BX + 21
-                    push di                     ;   zapamiętaj DI
+                    push di                     ;   zapamiętaj DI oraz AX
 					push ax
-                    mov di, offset skg
+                    mov di, offset skg			;	DS:[DI] = zmienna sklej_górę
                     mov al, ds:[di]
                     cmp al, 0
-					pop ax
-                    pop di                      ;   przywróć DI
+					pop ax                      ;   przywróć AX i DI
+                    pop di
                     jz goUp_fin                 ;   IF sklej_górę
                         add bx, 0A8h                ;   BX = BX + 8*21
 goUp_fin:       add bx, 15h                 ; BX = BX + 21 /wróć wiersz wyżej/
@@ -51,13 +51,13 @@ goUp_fin:       add bx, 15h                 ; BX = BX + 21 /wróć wiersz wyżej
                 sub bx, 0BDh                ; BX = BX - 189
                 js goDown_fin               ; IF BX > 0 /jeśli byliśmy w ostaniej linii/
                     sub bx, 15h                 ;   BX = BX - 21
-                    push di                     ;   zapamiętaj DI
+                    push di                     ;   zapamiętaj DI i AX
 					push ax
-                    mov di, offset skd
+                    mov di, offset skd			;	DS:[DI] = zmienna sklej_dół
                     mov al, ds:[di]
                     cmp al, 0
-					pop ax
-                    pop di                      ;   przywróć DI
+					pop ax                      ;   przywróć AX i DI
+                    pop di
                     jz goDown_fin               ;   IF sklej_dół
                         sub bx, 0A8h                ;   BX = BX - 8*21
 goDown_fin:     add bx, 0D2h                ; BX = BX + 189 + 21 /wróć wiersz wyżej/
@@ -65,38 +65,38 @@ goDown_fin:     add bx, 0D2h                ; BX = BX + 189 + 21 /wróć wiersz 
     goDown endp
     goRight proc near ;......................................................
                 add bx, 1                   ; BX = BX + 1
-                push bx
-                mov ax, bx
-                mov bl, 15h
-                div bl
-                pop bx
+                push bx						; zapamiętaj BX
+                mov ax, bx					; AX = BX
+                mov bl, 15h					; BL = 21
+                div bl						; AL = AX div BL, AH = AX mod BL
+                pop bx						; przywróć BX
                 cmp ah, 12h                 ; IF BX == 18 (mod 21)
                 jnz goRight_fin
                     sub bx, 1                   ;   BX = BX - 1
-                    push di
-                    mov di, offset skp
+                    push di						;	zapamiętaj DI
+                    mov di, offset skp			;	DS:[DI] = zmienna sklej_prawo
                     mov al, ds:[di]
-                    pop di
-                    cmp al, 0                   ;   IF SKP
+                    pop di						;	przywróć DI
+                    cmp al, 0                   ;   IF sklej_prawo
                     jz goRight_fin
                         sub bx, 10h                 ;   BX = BX - 16
 goRight_fin:    ret
     goRight endp
     goLeft proc near ;.......................................................
                 sub bx, 1                   ; BX = BX - 1
-                push bx                     ; IF BX % 21 = 0
-                mov ax, bx
-                mov bl, 15h
-                div bl
-                pop bx
+                push bx                     ; zapamiętaj BX
+                mov ax, bx					; AX = BX
+                mov bl, 15h					; BL = 21
+                div bl						; AL = AX div BL, AH = AX mod BL
+                pop bx						; przywróć BX
                 cmp ah, 0                   ; IF BX == 0 (mod 21)
                 jnz goLeft_fin
                     add bx, 1                   ;   BX = BX + 1
-                    push di
-                    mov di, offset skl
+                    push di						;	zapamiętaj DI
+                    mov di, offset skl			;	DS:[DI] = zmienna sklej_lewo
                     mov al, ds:[di]
-                    pop di
-                    cmp al, 0
+                    pop di						;	przywróć DI
+                    cmp al, 0					;	IF sklej_lewo
                     jz goLeft_fin
                         add bx, 10h                 ;   BX = BX + 16
 goLeft_fin:     ret
@@ -105,13 +105,13 @@ goLeft_fin:     ret
                 FOR rej, <AX,CX,DX>         ; zapamiętaj wartości AX,CX,DX
                     push rej
                 ENDM
-                mov cx,3                    ; CX=(0000 0011)b
+                mov cx,3                    ; CX=(0000 0000 0000 0011)b
 
 parseGroup_loop:mov al, 1                   ; tab[BX] = tab[BX]+1
                 add ds:[bx+di], al
                 mov al, dl                  ; AL = DL & 3
                 and al, 3
-                shr dl, 1                   ; DL = DL << 2
+                shr dl, 1                   ; DL = DL >> 2
                 shr dl, 1
                 sub al, 2                   ; AL = AL - 2
                 js parseGroup_g             ; IF AL > 0
@@ -119,7 +119,7 @@ parseGroup_loop:mov al, 1                   ; tab[BX] = tab[BX]+1
                     jmp parseGroup_gd       ; else
 parseGroup_g:   call goUp                       ;   goUp
 parseGroup_gd:  add al, 2                   ; AL = AL + 2
-                and al, 1
+                and al, 1					; AL = AL & 1
                 jz parseGroup_l             ; IF AL == 1 (mod 2)
                     call goRight                ;   goRight
                     jmp parseGroup_lp       ; else
@@ -132,7 +132,7 @@ parseGroup_lp:  shl cx, 1                   ; CX = CX << 2
                 FOR rej, <DX,CX,AX>         ; przywróć wartości DX,CX,AX
                     pop rej
                 ENDM
-                ret                         ; koniec
+                ret
     parseGroup endp
     ;.......................................................................
     ;.......................................................................
@@ -141,8 +141,7 @@ parseGroup_lp:  shl cx, 1                   ; CX = CX << 2
 
 
                     ; === rozgrzewka
-start:          
-                mov ax, seg top1            ; SS:[SP] - segment stosu
+start:          mov ax, seg top1            ; SS:[SP] - segment stosu
                 mov ss, ax
                 mov sp, offset top1
                 mov ax, seg inp             ; DS:[DI] - zapis do pamięci
@@ -189,19 +188,19 @@ if_ALgt57:      cmp al, 'a'                 ; if AL >= 'a'
                     jmp lA_operate              ;   JMP
 if_ALle97:      cmp al, 'A'                 ; if AL < 'A' || AL > 'F'
                 jl err_BadArg                   ;   bad input
-                cmp al, 46h
+                cmp al, 'F'
                 jg err_BadArg
                 sub al, 'A'-10              ; AL = AL - 'A' + 10
 lA_operate:     push bx                     ; zapamiętaj BX
-                mov bx, 10h                 ; do bx: adres przetwarzanego elementu tablicy
-                sub bx, cx
+                mov bx, 10h                 ; w BX adres przetwarzanego elementu tablicy
+                sub bx, cx					; BX = BX - CX
                 mov dl, ds:[bx+di]          ; tab[16-CX] = 16*tab[16-CX] + AX
+                shl dl, 1					; DL = DL << 4
                 shl dl, 1
                 shl dl, 1
                 shl dl, 1
-                shl dl, 1
-                add dl, al
-                mov ds:[bx+di], dl
+                add dl, al					; DL = DL + AL
+                mov ds:[bx+di], dl			; tab[16-CX] = DL
                 pop bx                      ; przywróć BX
                 add si, 1                   ; SI = SI + 1
                 add bx, 1                   ; BX = BX + 1
@@ -213,20 +212,19 @@ lA_fin:
                     ; === Wczytywanie parametrów - sklejenia
                 mov di, offset skd          ; DS:[DI] - miejsce zapisu parametrów
                 xor ax, ax                  ; AX = 0
-                mov cx, 4                   ; CX = 4
+                mov cx, 4                   ; CX = 4 /powtórz 4 razy/
 loop_B:         call wczytajBezSpacji       ; wczytaj
                 cmp al, 13                  ; IF AL = ENTER
                 je err_TooFewArg                ;   bad input
-                sub al, '0'
-                mov dx, ax                  ; wyświetl
+                sub al, '0'					; AL = AL - '0'
                 mov ds:[di], al             ; zapamiętaj wczytaną wartość
                 add di, 1                   ; przesuń zapis o jedną pozycję w przód
                 add si, 1                   ; odczytuj następną wartość
                 loop loop_B                 ; powtórz
 
-                call wczytajBezSpacji       ; wczytaj co pozostało
+                call wczytajBezSpacji       ; wczytaj to, co pozostało
                 cmp al, 13                  ; IF AL != ENTER
-                jne err_TooMuchArg              ;   bad input
+                	jne err_TooMuchArg          ;   bad input
 
                 jmp fillTab
     
@@ -257,10 +255,10 @@ fillK:          mov al, '|'                 ; wpisz znak | ...
                 mov ds:[di+20], al
                 add di, 15h                 ; przejdź do następnego wiersza
                 loop fillK
-                mov di, offset tab
 
-                    ; === Wypełnij pierwszy wiersz
-                mov cx, 13h                 ; uzupełnianie LENGTH(str) razy
+                    ; === Wypełnij pierwszy i ostatni wiersz
+                mov di, offset tab			; DS:[DI] = adres tablicy tab
+                mov cx, 13h                 ; uzupełnianie LEN(str) razy
                 cld                         ; w kierunku rosnących adresów
                 mov ax, seg header          ; ES:[SI] = adres przeznaczenia
                 mov es, ax
@@ -268,8 +266,7 @@ fillK:          mov al, '|'                 ; wpisz znak | ...
                 mov di, offset tab          ; DS:[DI] = adres źródła
                 rep movsb                   ; przepisz
 
-                    ; === Wypełnij ostatni wiersz
-                mov cx, 13h                 ; uzupełnianie LENGTH(str) razy
+                mov cx, 13h                 ; uzupełnianie LEN(str) razy
                 mov si, offset footer       ; ES:[SI] = adres przeznaczenia
                 mov di, offset tab+210      ; DS:[DI+210] = adres źródła (ostatni wiersz)
                 rep movsb                   ; przepisz
@@ -284,6 +281,7 @@ parse_loop:     mov dl, es:[si]             ; wczytaj blok
                 add si, 1                   ; przygotuj się do wczytania następnego
                 call parseGroup             ; wywołaj parseGroup(DX=dane_we)
                 loop parse_loop
+				push bx						; zapamiętaj ostatnią pozycję
 
                     ; === Zamień ilość wejść na odpowiedni znak ASCII
                 mov cx, 9                   ; CX = 9 /Przetwórz 9 wierszy tablicy/
@@ -291,18 +289,25 @@ parse_loop:     mov dl, es:[si]             ; wczytaj blok
                 mov ds, ax
                 mov si, offset exch
                 mov di, offset tab          ; DS:[BX+DI] = adres komórek tablicy
-exchange_loop:  add di, 15h
-                mov bx, 11h                 ; dla każdej kolumny 1..17 (w odwrotnej kolejności)
-exch_inn_loop:  mov dl, ds:[bx+di]
+exchange_loop:  add di, 15h					; DI = DI + 21 /następny wiersz/
+                mov bx, 11h                 ; dla każdej kolumny CX=17..1
+exch_inn_loop:  mov dl, ds:[bx+di]			; DL = tab[21*w + CX]
                 cmp dl, 0Eh                 ; IF DL > 14
                 jle exch_nosub
-                mov dl, 0Eh                     ;   DL = 14
+                	mov dl, 0Eh            		;   DL = 14
 exch_nosub:     mov bp, dx                  ; BP = DX
                 mov dl, ds:[bp+si]          ; DS:[BX+DI] = DS:[BP+SI] /wpisz odpowiedni znak/
                 mov ds:[bx+di], dl
                 sub bx, 1                   ; kolejna kolumna
                 jnz exch_inn_loop
                 loop exchange_loop
+
+	          	mov di, offset tab          ; DS:[DI] = tablica wynikowa
+				pop bx						; wczytaj ostatnią pozycję...
+				mov al, 'E'					; ...i wpisz na to miejsce 'E'
+				mov ds:[bx+di], al
+				mov al, 'S'					; na pierwszą pozycję wpisz 'S'
+				mov ds:[di+114],al 
 
 printTab:       mov dx, offset tab          ; DS:[DX] = adres tablicy wyjściowej
                 mov ah, 9                   ; wypisz za pomocą funkcji DOS-a 9h
