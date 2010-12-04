@@ -1,6 +1,3 @@
-
-
-
 code1	segment
 
 start:	mov	ax,seg top1
@@ -19,8 +16,7 @@ start:	mov	ax,seg top1
 
 	mov	word ptr es:[0],8441h
 
-	mov	word ptr es:[20*80*2 + 2*40
-],7244h
+	mov	word ptr es:[20*80*2 + 2*40],7244h
 
 
 	;mov	byte ptr es:[0],'A'
