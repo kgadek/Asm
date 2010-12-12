@@ -6,8 +6,8 @@
 dane1   segment ;____________________________________________________________
     errNoArg        db "Blad: nie podano argumentow programu.",10,13,'$'
     errBadArg       db "Blad: nieprawidlowe dane wejsciowe.",10,13,'$'
-    errTooFewArg    db "Blad: za malo argumentow.",10,10,'$'
-    errTooMuchArg   db "Blad: za duzo argumentow.",10,10,'$'
+    errTooFewArg    db "Blad: za malo argumentow.",10,13,'$'
+    errTooMuchArg   db "Blad: za duzo argumentow.",10,13,'$'
     tab             db  231 dup(0)  ; tablica wyjściowa wraz z CR/LF
                     db '$'
     inp             db  16 dup(0)   ; tablica wejściowa
