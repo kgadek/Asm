@@ -17,9 +17,10 @@ argC			db 2 dup(0)
 fileC			dw ?							; uchwyty do plików
 fileB			dw ?
 fileA			dw ?
-buforA			db BUFA_SIZE dup(?)
-buforB			db BUFB_SIZE dup(?)
-buforC			db BUFC_SIZE-256 dup(?)
+
+buforA			db BUFA_SIZE+1 dup(?)
+buforB			db BUFB_SIZE+1 dup(?)
+buforC			db BUFC_SIZE-256+1 dup(?)
 fileName		db 256 dup(0)					; bufor na nazwę pliku
 dane ends
 
@@ -106,10 +107,10 @@ start:			mov ax, seg stos_top		; SS:[SP] - segment stosu
 				mov cl, es:80h				; IF argc == 0
 				jcxz err_noArg					; error(NoArg)
 
+		; __________ wczytaj argumenty linii poleceń
 				mov si, 82h					; [BX] = argv
 				mov bx, 0
 				mov cl, 1					; CL -- poprzednio_spacja? = 1
-											; do {
 getArgs:			mov al, es:[si]				; 	BX = wczytaj
 					cmp al, 13					;	IF AL = enter
 					jne getArgs_nieEnter
@@ -134,9 +135,10 @@ getArgs_nieSp:		cmp al, cl					;	IF CL != AL
 							call error					;	error(TooMuchArg)
 getArgs_cont:		mov cl, al					;	CL = AL
 					add si, 1					;	SI = SI + 1
-					jmp getArgs				; } while(true)
+					jmp getArgs				; while(true)
 getArgs_break:
 
+		; __________ otwórz pliki
 				mov al, 0					; read-only
 				mov bx, 4					; handle = fileA
 				mov dx, offset fileName		; DX = offset fileName
@@ -157,12 +159,23 @@ openFiles:			push bx						;	push BX...
 				jmp openFiles				; } while( BX >= 0 )
 openFiles_done:	
 
+		; __________ wczytanie danych z plików
+				mov bx, fileA				; wczytaj plikA
 				mov ah, 3fh
-				mov bx, fileA
-				mov cx, 64h
+				mov cx, BUFA_SIZE
 				mov dx, offset buforA
 				int 21h
+				mov bx, ax
+				mov buforA[bx], 0
+				mov bx, fileB				; wczytaj plikB
+				mov ah, 3fh
+				mov cx, BUFB_SIZE
+				mov dx, offset buforB
+				int 21h
+				mov bx, ax
+				mov buforB[bx], 0
 
+		; __________ zamknięcie plików
 				call closeFiles
 				mov ax, 04c00h				; exit(0)
 				int 21h

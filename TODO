@@ -1,5 +1,4 @@
 z06 * Przetwarzanie każdego wiersza input2
-z07 * Sprawdzenie, czy wiersz wejściowy z input2 mieści się w buforze
 z08 * Wyszukiwanie wzorca Rabina-Karpa : funkcja hashująca
 z09 * Wyszukiwanie wzorca Rabina-Karpa : funkcja rehashująca
 z10 * Wyszukiwanie wzorca Rabina-Karpa : funkcja porównująca ciągi znaków dokładnie
@@ -17,3 +16,7 @@ z03 * Sprawdzenie, czy podano 3 argumenty
 z13 * Procedura zwracająca błędy
 z02 * Sprawdzenie, czy podano argumenty
 z01 * Szkielet programu
+
+IGNORED:
+z07 * Sprawdzenie, czy wiersz wejściowy z input2 mieści się w buforze
+
