@@ -1,5 +1,3 @@
-z04 * Sprawdzenie, czy argumenty wejściowe istnieją
-z05 * Sprawdzenie, czy można otworzyć plik wyjściowy do zapisu
 z06 * Przetwarzanie każdego wiersza input2
 z07 * Sprawdzenie, czy wiersz wejściowy z input2 mieści się w buforze
 z08 * Wyszukiwanie wzorca Rabina-Karpa : funkcja hashująca
@@ -7,11 +5,14 @@ z09 * Wyszukiwanie wzorca Rabina-Karpa : funkcja rehashująca
 z10 * Wyszukiwanie wzorca Rabina-Karpa : funkcja porównująca ciągi znaków dokładnie
 z11 * Wyszukiwanie wzorca Rabina-Karpa : algorytm właściwy
 z12 * Wypisywanie wyników do output
-z14 * otwarcie pliku input1 i input2
-z15 * otwarcie pliku output
-z16 * zamknięcie plików input1, input2 i output
 
 DONE:
+z13 * closeFiles: zrobić pętlę
+z16 * zamknięcie plików input1, input2 i output
+z15 * otwarcie pliku output
+z14 * otwarcie pliku input1 i input2
+z05 * Sprawdzenie, czy można otworzyć plik wyjściowy do zapisu
+z04 * Sprawdzenie, czy argumenty wejściowe istnieją
 z03 * Sprawdzenie, czy podano 3 argumenty
 z13 * Procedura zwracająca błędy
 z02 * Sprawdzenie, czy podano argumenty
