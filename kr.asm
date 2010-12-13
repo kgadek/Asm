@@ -18,6 +18,8 @@ fileC			dw ?							; uchwyty do plików
 fileB			dw ?
 fileA			dw ?
 
+m				dw 0
+
 buforA			db BUFA_SIZE+1 dup(?)
 buforB			db BUFB_SIZE+1 dup(?)
 buforC			db BUFC_SIZE-256+1 dup(?)
@@ -77,7 +79,21 @@ openFromArg_ok:	pop bx
 				ret
 	openFromArg endp
 	; .................................................................................................................
+	; .....[ calcHash( SI* = offset bufora, CX* - ilość znaków do przetworzenia ) ]....................................
+	; zwraca hash w AX
+	calcHash proc near
+				push bx
+				xor bx,bx
+				xor ax, ax
+calcHash_loop:		mov bl, buforA[si]
+					add ax, bx
+					add si, 1
+				loop calcHash_loop
+				pop bx
+				ret
+	calcHash endp
 	; .................................................................................................................
+	; .....[ closeFiles() ]............................................................................................
 	closeFiles proc near
 				mov si, 4
 				mov cx, 3
@@ -151,11 +167,14 @@ openFiles:			push bx						;	push BX...
 					neg cl
 					add cl, argA[bx+1]
 					pop bx						;	...pop BX
-					call openFromArg			; 	openFromArg()
-					mov al, 1					; 	read-write
+					cmp bx, 0					;	IF BX == 0
+					jne openFiles_ro				;	read-write
+					mov al, 1
+openFiles_ro:		call openFromArg			; 	openFromArg()
+					mov al, 0					; 	read-only
 					cmp bx, 0					; 
 					jz openFiles_done
-					sub bx, 2					; BX = BX - 2
+					sub bx, 2					;	BX = BX - 2
 				jmp openFiles				; } while( BX >= 0 )
 openFiles_done:	
 
@@ -174,6 +193,11 @@ openFiles_done:
 				int 21h
 				mov bx, ax
 				mov buforB[bx], 0
+				mov m, ax
+
+		; __________ policz hash(buforA[0..m-1]
+				mov si, 0
+				call calcHash
 
 		; __________ zamknięcie plików
 				call closeFiles

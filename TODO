@@ -1,11 +1,12 @@
 z06 * Przetwarzanie każdego wiersza input2
-z08 * Wyszukiwanie wzorca Rabina-Karpa : funkcja hashująca
 z09 * Wyszukiwanie wzorca Rabina-Karpa : funkcja rehashująca
 z10 * Wyszukiwanie wzorca Rabina-Karpa : funkcja porównująca ciągi znaków dokładnie
 z11 * Wyszukiwanie wzorca Rabina-Karpa : algorytm właściwy
 z12 * Wypisywanie wyników do output
 
 DONE:
+z16 * Otwierać plik B w trybie RO
+z08 * Wyszukiwanie wzorca Rabina-Karpa : funkcja hashująca
 z13 * closeFiles: zrobić pętlę
 z16 * zamknięcie plików input1, input2 i output
 z15 * otwarcie pliku output
