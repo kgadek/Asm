@@ -23,11 +23,13 @@ Alen            dw 0
 mEnd			dw 0ffffh
 m				dw 0
 p				dw 0
+pk				dw 0
 hashB           dw 0
 
 buforA          db BUFA_SIZE+1 dup(?)
 buforB          db BUFB_SIZE+1 dup(?)
 buforC          db BUFC_SIZE-256+1 dup(?)
+bufCpos			dw offset buforC
 fileName        db 256 dup(0)                   ; bufor na nazwę pliku
 
 printBuf		db 20 dup('0')					; bufor wydruku (wypełniany od końca)
@@ -81,7 +83,13 @@ openFromArg_re:     mov al, es:[si]             ;   fileName[BX++] = ES:[SI++]
                 mov fileName[bx], 0         ; fileName[BX] = 0
                 pop ax
                 mov ah, 3dh                 ; int 21:3Dh (openFile)
-                int 21h
+				push cx
+				cmp al, 1
+				jne openFromArg_op
+					mov ah, 3ch
+					xor cx, cx
+openFromArg_op: int 21h
+				pop cx
                 jnc openFromArg_ok          ; IF error
                     mov al, ERROR_FILEOPEN      ;   error(FileOpen)
                     call error
@@ -107,22 +115,24 @@ calcHash_loop:      mov bl, buforA[si] 		; BX <-- 0:bufA[SI]
     ; .....[ parseNum( AX* = liczba ) ]................................................................................
 	; zwraca znaki na stosie (dla AX=0123 na szczycie będzie 1)
 	parseNum proc near
-				push bx						; zapamiętaj BX, DX, CX
+				push bx						; zapamiętaj BX, DX, AX
 				push dx
+				push ax
 				push cx
 				mov cx, 0ah
 				mov bx, 14h					; len = 0
 parseNum_loop:		xor dx, dx				; do {
 					div cx						;	X' = X div 10
 					;dec bx						;	BX --
-					sub bx, 1
+					dec bx
 					add dx, '0'					;	(char!)(X mod 10)
 					mov printBuf[bx], dl		;	push (X mod 10)
 					xor dx, dx					;	X = X'
 					cmp ax, 00h
 					jnz parseNum_loop		; } while(AX != 0)
 				mov printBufStart, bx		; zapamiętaj miejsce startu danych
-				pop cx						; przywróć BX, DX, CX
+				pop cx						; przywróć BX, DX, AX
+				pop ax
 				pop dx
 				pop bx
 				ret
@@ -244,57 +254,73 @@ eachPatt_mEfail:	mov mEnd, bx
 					sub bx, p
 					mov m, bx
 					jz eachPattTest
-					; tutaj karp
-eachPattTest:		mov bx, p
-					cmp bx, Blen
-					jl eachPatt
+					; ############################################################
 
-        ; __________ policz hash
-                mov si, 0
-                mov cx, ax
-                call calcHash
-                mov hashB, ax               ; hashB = hash(bufB[0..Blen-1])
-                mov si, BUFA_SIZE+1
-                mov cx, Blen
-                call calcHash               ; AX = hash(bufA[0..Blen-1])
+	        	; ___ ## policz hash ##
+	                mov si, BUFA_SIZE+1
+					add si, p
+	                mov cx, bx
+	                call calcHash              	; hashB = hash(bufB[0..Blen-1])h
+	                mov hashB, ax
+	                mov si, 0        			; AX = hash(bufA[0..Blen-1])
+	                mov cx, bx
+	                call calcHash
 
-                xor bx, bx                  ; BX - i = 0
-                mov si, Blen                   ; SI - i+Blen = Blen
-                xor dx, dx
-                mov cx, Alen
+	                mov si, bx	 	            ; SI = Blen /i+Blen/
+	                xor bx, bx                  ; BX = 0 /i/
+	                mov cx, Alen				; CX = Alen
+					mov dx, p					; PK = P
+					mov pk, dx
+					mov dx, ds					; ES = DS
+					mov es, dx
+	                xor dx, dx					; DX = 0
 
-        ; __________ wyszukiwanie właściwe
+               ; ___ ## wyszukiwanie właściwe ##
 karpRabin:          cmp ax, hashB
-                    jne karpRabin_fail
-                    mov ax, 0ffffh
-                    ;call error
-					call parseNum
-					push dx
-					push ax
-					mov dx, offset printBuf
-					add dx, printBufStart
-					;sub dx, 13h
-					mov ah, 09h
-					int 21h
-					mov ax, ds
-					mov es, ax
-					mov di, offset buforC
-					add di, p
-					mov cx, 15h
-					sub cx, printBufStart
-					mov si, printBufStart
-					add si, offset printBuf
-					add p, cx
-					rep movsb
-					pop ax
-					pop dx
-karpRabin_fail:     mov dl, buforA[bx]
+                    je karpRabin_succ
+karpRabin_fail:     mov dl, buforA[bx]			; AX = update_hash(...)
                     sub ax, dx
                     mov dl, buforA[si]
                     add ax, dx
-                    inc si
-                    inc bx
+                    inc si						; SI ++
+                    inc bx						; BX ++
                 loop karpRabin
+				jmp eachPattTest
+karpRabin_succ:     ; TODO dokładne porównanie else jmp karpRabin_fail
+					push cx
+					push ax
+					push si
+					mov ax, bx
+					call parseNum
+					mov si, printBufStart
+					add si, offset printBuf
+					mov cx, offset printBuf + 015h
+					sub cx, si
+					mov di, bufCpos
+					add bufCpos, cx
+					rep movsb
+					pop si
+					pop ax
+					pop cx
+					jmp karpRabin_fail
+					; ############################################################
+eachPattTest:		push ax
+					mov ax, 000ah
+					mov bx, bufCpos
+					mov [bx], ax
+					pop ax
+					inc bufCpos
+					mov bx, p
+					cmp bx, Blen
+					jl eachPatt
+
+        ; __________ zapisanie buforaC do pliku
+					mov bx, fileC
+					mov cx, bufCpos
+					sub cx, offset buforC - 1
+					mov dx, offset buforC
+					mov ah, 40h
+					int 21h
 
         ; __________ zamknięcie plików
                 call closeFiles
