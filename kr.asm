@@ -20,7 +20,7 @@ fileA           dw ?
 
 Blen            dw 0
 Alen            dw 0
-m_end			dw 0
+mEnd			dw 0ffffh
 m				dw 0
 p				dw 0
 hashB           dw 0
@@ -229,6 +229,25 @@ openFiles_done:
                 mov bx, ax
                 mov buforB[bx], 0
                 mov Blen, ax
+
+		; __________ przetwarzanie ,,dla każdego wzorcja w jednej linii''
+				;jmp eachPattTest
+eachPatt:			mov bx, mEnd				;	p = mEnd + 1
+					mov p, bx
+					inc p
+eachPatt_mE:			inc bx
+						cmp bx, Blen
+						jge eachPatt_mEfail
+						cmp buforB[bx], 0ah
+						jne eachPatt_mE
+eachPatt_mEfail:	mov mEnd, bx
+					sub bx, p
+					mov m, bx
+					jz eachPattTest
+					; tutaj karp
+eachPattTest:		mov bx, p
+					cmp bx, Blen
+					jl eachPatt
 
         ; __________ policz hash
                 mov si, 0
