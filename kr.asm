@@ -18,8 +18,11 @@ fileC           dw ?                            ; uchwyty do plików
 fileB           dw ?
 fileA           dw ?
 
-m               dw 0                            ; długość wzorca
-n               dw 0                            ; długość tekstu
+Blen            dw 0
+Alen            dw 0
+m_end			dw 0
+m				dw 0
+p				dw 0
 hashB           dw 0
 
 buforA          db BUFA_SIZE+1 dup(?)
@@ -187,7 +190,6 @@ getArgs_cont:       mov cl, al                  ;   CL = AL
 getArgs_break:
 
         ; __________ otwórz pliki
-                mov al, 0                   ; read-only
                 mov bx, 4                   ; handle = fileA
                 mov dx, offset fileName     ; DX = offset fileName
                 xor cx, cx                  ; do {
@@ -199,11 +201,11 @@ openFiles:          push bx                     ;   push BX...
                     neg cl
                     add cl, argA[bx+1]
                     pop bx                      ;   ...pop BX
+                    mov al, 0                   ;   read-only
                     cmp bx, 0                   ;   IF BX == 0
                     jne openFiles_ro                ;   read-write
                     mov al, 1
 openFiles_ro:       call openFromArg            ;   openFromArg()
-                    mov al, 0                   ;   read-only
                     cmp bx, 0                   ; 
                     jz openFiles_done
                     sub bx, 2                   ;   BX = BX - 2
@@ -216,7 +218,7 @@ openFiles_done:
                 mov cx, BUFA_SIZE
                 mov dx, offset buforA
                 int 21h
-                mov n, ax
+                mov Alen, ax
                 mov bx, ax
                 mov buforA[bx], 0
                 mov bx, fileB               ; wczytaj plikB
@@ -226,22 +228,23 @@ openFiles_done:
                 int 21h
                 mov bx, ax
                 mov buforB[bx], 0
-                mov m, ax
+                mov Blen, ax
 
-        ; __________ policz hash(buforA[0..m-1]
+        ; __________ policz hash
                 mov si, 0
                 mov cx, ax
                 call calcHash
-                mov hashB, ax               ; hashB = hash(bufB[0..m-1])
+                mov hashB, ax               ; hashB = hash(bufB[0..Blen-1])
                 mov si, BUFA_SIZE+1
-                mov cx, m
-                call calcHash               ; AX = hash(bufA[0..m-1])
+                mov cx, Blen
+                call calcHash               ; AX = hash(bufA[0..Blen-1])
 
                 xor bx, bx                  ; BX - i = 0
-                mov si, m                   ; SI - i+m = m
+                mov si, Blen                   ; SI - i+Blen = Blen
                 xor dx, dx
-                mov cx, n
+                mov cx, Alen
 
+        ; __________ wyszukiwanie właściwe
 karpRabin:          cmp ax, hashB
                     jne karpRabin_fail
                     mov ax, 0ffffh
@@ -254,6 +257,16 @@ karpRabin:          cmp ax, hashB
 					;sub dx, 13h
 					mov ah, 09h
 					int 21h
+					mov ax, ds
+					mov es, ax
+					mov di, offset buforC
+					add di, p
+					mov cx, 15h
+					sub cx, printBufStart
+					mov si, printBufStart
+					add si, offset printBuf
+					add p, cx
+					rep movsb
 					pop ax
 					pop dx
 karpRabin_fail:     mov dl, buforA[bx]

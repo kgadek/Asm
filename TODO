@@ -3,9 +3,10 @@ z09 * Wyszukiwanie wzorca Rabina-Karpa : funkcja rehashująca
 z10 * Wyszukiwanie wzorca Rabina-Karpa : funkcja porównująca ciągi znaków dokładnie
 z11 * Wyszukiwanie wzorca Rabina-Karpa : algorytm właściwy
 z12 * Wypisywanie wyników do output
+z18 * Optymalizacja Karpa-Rabina (skok gdy test zgodności prawdziwy)
 
 DONE:
-z16 * Otwierać plik B w trybie RO
+z17 * Otwierać plik B w trybie RO
 z08 * Wyszukiwanie wzorca Rabina-Karpa : funkcja hashująca
 z13 * closeFiles: zrobić pętlę
 z16 * zamknięcie plików input1, input2 i output
