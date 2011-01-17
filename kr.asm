@@ -1,7 +1,7 @@
 ;.286
 ; Karp-Rabin finder
 ; by Konrad Gądek
-BUFA_SIZE       EQU 8192    ; po 4KB na bufory
+BUFA_SIZE       EQU 8192
 BUFB_SIZE       EQU 8192
 BUFC_SIZE       EQU 4096
 
@@ -26,6 +26,12 @@ buforA          db BUFA_SIZE+1 dup(?)
 buforB          db BUFB_SIZE+1 dup(?)
 buforC          db BUFC_SIZE-256+1 dup(?)
 fileName        db 256 dup(0)                   ; bufor na nazwę pliku
+
+printBuf		db 20 dup('0')					; bufor wydruku (wypełniany od końca)
+				db ' '
+				db '$'
+printBufStart	dw 14h
+
 dane ends
 
 code segment ; ########################################################################################################
@@ -87,13 +93,37 @@ openFromArg_ok: pop bx
                 push bx
                 xor bx,bx
                 xor ax, ax
-calcHash_loop:      mov bl, buforA[si]
+calcHash_loop:      mov bl, buforA[si] 		; BX <-- 0:bufA[SI]
                     add ax, bx
-                    add si, 1
+					inc si
                 loop calcHash_loop
                 pop bx
                 ret
     calcHash endp
+    ; .................................................................................................................
+    ; .....[ parseNum( AX* = liczba ) ]................................................................................
+	; zwraca znaki na stosie (dla AX=0123 na szczycie będzie 1)
+	parseNum proc near
+				push bx						; zapamiętaj BX, DX, CX
+				push dx
+				push cx
+				mov cx, 0ah
+				mov bx, 14h					; len = 0
+parseNum_loop:		xor dx, dx				; do {
+					div cx						;	X' = X div 10
+					;dec bx						;	BX --
+					sub bx, 1
+					add dx, '0'					;	(char!)(X mod 10)
+					mov printBuf[bx], dl		;	push (X mod 10)
+					xor dx, dx					;	X = X'
+					cmp ax, 00h
+					jnz parseNum_loop		; } while(AX != 0)
+				mov printBufStart, bx		; zapamiętaj miejsce startu danych
+				pop cx						; przywróć BX, DX, CX
+				pop dx
+				pop bx
+				ret
+	parseNum endp
     ; .................................................................................................................
     ; .....[ closeFiles() ]............................................................................................
     closeFiles proc near
@@ -214,8 +244,18 @@ openFiles_done:
 
 karpRabin:          cmp ax, hashB
                     jne karpRabin_fail
-                    mov al, 9
-                    call error
+                    mov ax, 0ffffh
+                    ;call error
+					call parseNum
+					push dx
+					push ax
+					mov dx, offset printBuf
+					add dx, printBufStart
+					;sub dx, 13h
+					mov ah, 09h
+					int 21h
+					pop ax
+					pop dx
 karpRabin_fail:     mov dl, buforA[bx]
                     sub ax, dx
                     mov dl, buforA[si]
