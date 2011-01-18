@@ -286,23 +286,36 @@ karpRabin_fail:     mov dl, buforA[bx]			; AX = update_hash(...)
                     inc bx						; BX ++
                 loop karpRabin
 				jmp eachPattTest
-karpRabin_succ:     ; TODO dokładne porównanie else jmp karpRabin_fail
-					push cx
+karpRabin_succ:     push cx
 					push ax
 					push si
-					mov ax, bx
-					call parseNum
-					mov si, printBufStart
-					add si, offset printBuf
-					mov cx, offset printBuf + 015h
-					sub cx, si
-					mov di, bufCpos
-					add bufCpos, cx
-					rep movsb
-					pop si
+					push bx
+
+					mov si, p
+					mov cx, m
+karpRabin_thChk:		mov al, buforA[BX]
+						cmp al, buforB[SI]
+						jne karpRabin_thChkF3
+						inc si
+						inc bx
+					loop karpRabin_thChk
+karpRabin_thChkF3:	pop bx
+					cmp cx, 0
+					jnz karpRabin_thChkF2
+						mov ax, bx
+						call parseNum
+						mov si, printBufStart
+						add si, offset printBuf
+						mov cx, offset printBuf + 015h
+						sub cx, si
+						mov di, bufCpos
+						add bufCpos, cx
+						rep movsb
+karpRabin_thChkF2:	pop si
 					pop ax
 					pop cx
 					jmp karpRabin_fail
+
 					; ############################################################
 eachPattTest:		push ax
 					mov ax, 000ah
@@ -315,12 +328,12 @@ eachPattTest:		push ax
 					jl eachPatt
 
         ; __________ zapisanie buforaC do pliku
-					mov bx, fileC
-					mov cx, bufCpos
-					sub cx, offset buforC - 1
-					mov dx, offset buforC
-					mov ah, 40h
-					int 21h
+				mov bx, fileC
+				mov cx, bufCpos
+				sub cx, offset buforC - 1
+				mov dx, offset buforC
+				mov ah, 40h
+				int 21h
 
         ; __________ zamknięcie plików
                 call closeFiles
