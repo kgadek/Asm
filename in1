@@ -1,0 +1,30 @@
+
+rotate 60
+
+  move   20
+  		  rotate 60
+move 20
+rotate -60
+move 20
+rotate 120
+move 10
+rotate 30
+move 20
+rotate -60
+move 20
+rotate 60
+move 20
+rotate -120
+penup
+move 5
+rotate 120
+pendown
+move 10
+rotate -120
+move 10
+rotate -120
+move 10
+
+
+
+
