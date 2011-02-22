@@ -2,6 +2,7 @@
 ;* Dane                                                                                            *
 ;***************************************************************************************************
 dane segment
+filename		db 256 dup(0)
 dane ends
 
 
@@ -15,6 +16,7 @@ ASSUME CS:code, DS:dane
 ;*                                                                                                 *
 ;***************************************************************************************************
 readArgs proc near
+			ret
 readArgs endp
 
 
@@ -52,15 +54,51 @@ waitForKeyPress endp
 
 
 ;***************************************************************************************************
+;* graphStart                                                                                      *
+;*   uruchamia tryb graficzny (320x200)                                                            *
+;***************************************************************************************************
+graphStart proc near
+			push ax
+			mov ax, 0013h
+			int 10h
+			pop ax
+			ret
+graphStart endp
+
+
+
+;***************************************************************************************************
+;* graphStop                                                                                       *
+;*   uruchamia tryb tekstowy (80x25 kolor)                                                         *
+;***************************************************************************************************
+graphStop proc near
+			push ax
+			mov ax, 0003h
+			int 10h
+			pop ax
+			ret
+graphStop endp
+
+
+
+;***************************************************************************************************
 ;* Main                                                                                            *
 ;***************************************************************************************************
-start:		call readArgs
+start:		mov ax, seg stosTop					; SS:[SP]
+			mov ss, ax
+			mov sp, offset stosTop
+			mov ax, seg fileName				; DS:[] - segment danych
+			mov ds, ax
+
+			call readArgs
 			call openFile
+			call graphStart
 			call parseFile
 			call closeFile
 			call waitForKeyPress
+			call graphStop
 
-			mov ax, 04c00h						; zakończenie działania programu
+			mov ax, 04c00h						; exit(0)
 			int 21h
 code ends
 
