@@ -6,6 +6,8 @@
 ;* Stałe                                                                                           *
 ;***************************************************************************************************
 BUFFER_SIZE			equ 8192
+CMDBUFFER_SIZE		equ 20
+PARABUFFER_SIZE		equ 10
 ERROR_NOARG			equ '1'
 ERROR_TOOFEWARG		equ '2'
 ERROR_TOOMUCHARG	equ '3'
@@ -30,6 +32,20 @@ filehandler		dw ?
 fileBufSize		dw 0
 fileBuf			db BUFFER_SIZE dup(?)
 				db 0
+
+command			db CMDBUFFER_SIZE dup(?)
+				db 0
+param			db PARABUFFER_SIZE dup(?)
+				db 0
+
+posX			db 064h							; X = 100
+posY			db 0A0h							; Y = 160
+rot				db 90							; a = 90' (do góry)
+
+moveCmdStr		db "move",'$'
+penupCmdStr		db "penup",'$'
+rotateCmdStr	db "rotate",'$'
+pendownCmdStr	db "pendown",'$'
 
 dane ends
 
@@ -92,7 +108,7 @@ readArgsEatSpaces endp
 
 
 ;***************************************************************************************************
-;* readArgsReadWord int.                                                                            *
+;* readArgsReadWord                                                                                 *
 ;*   Przepisuje nazwę pliku wejściowego do zmiennej filename.                                      *
 ;*                                                                                                 *
 ;* Parametry:                                                                                      *
@@ -117,6 +133,7 @@ raew_e:		pop bx
 			ret
 
 readArgsReadWord endp
+
 
 
 ;***************************************************************************************************
@@ -162,7 +179,8 @@ readArgs endp
 
 ;***************************************************************************************************
 ;* openFile                                                                                        *
-;*   Zakładamy, że DS jest ustawione na dobry segment.                                             *
+;*   Zakładamy, że DS jest ustawione na dobry segment. Uchwyt do pliku zapisujemy w zmiennej       *
+;*   filehandler.                                                                                  *
 ;***************************************************************************************************
 openFile proc near
 			push ax
@@ -184,7 +202,7 @@ openFile endp
 
 ;***************************************************************************************************
 ;*  parseFile_readIntoBuffer                                                                       *
-;*   Wczytuje zawartość pliku do bufora                                                            *
+;*   Wczytuje zawartość pliku wskazanego przez uchwyt w zmiennej filehandler do bufora.            *
 ;***************************************************************************************************
 parseFile_readIntoBuffer proc near
 			FOR rej, <ax, bx, cx, dx>
@@ -209,18 +227,147 @@ parseFile_readIntoBuffer endp
 
 
 ;***************************************************************************************************
+;* parseWord                                                                                       *
+;*   Wczytuje polecenie do zmiennej command a także ustawia CX na ilość wczytanych znaków.         *
+;*   CX = 0 oznacza koniec pliku                                                                   *
+;***************************************************************************************************
+parseWord proc near
+			ret
+parseWord endp
+
+
+
+;***************************************************************************************************
+;* cmdCompare                                                                                      *
+;*   Porównuje zawartość zmiennej command z łańcuchem o adresie DS:[DI]. Zwraca informacje         *
+;*   poprzez rejestr flag.                                                                         *
+;*                                                                                                 *
+;* Parametry:                                                                                      *
+;*   DS  -- segment danych                                                                         *
+;*   DI* -- offset łańcucha                                                                        *
+;*   CX  -- ilość znaków do porównania                                                             *
+;***************************************************************************************************
+cmdCompare proc near
+			push cx
+			push bx
+			push ax
+			mov bx, offset command
+cc_loop:		mov ax, ds:[di]
+				jne cc_end
+				inc di
+				inc bx
+				loop cc_loop
+cc_end:		pop ax
+			pop bx
+			pop cx
+			ret
+cmdCompare endp
+
+
+
+;***************************************************************************************************
+;* commandMove                                                                                     *
+;***************************************************************************************************
+commandMove proc near
+			ret
+commandMove endp
+
+
+
+;***************************************************************************************************
+;* commandPenup                                                                                    *
+;***************************************************************************************************
+commandPenup proc near
+			ret
+commandPenup endp
+
+
+
+;***************************************************************************************************
+;* commandRotate                                                                                   *
+;***************************************************************************************************
+commandRotate proc near
+			ret
+commandRotate endp
+
+
+
+;***************************************************************************************************
+;* commandPendown                                                                                  *
+;***************************************************************************************************
+commandPendown proc near
+			ret
+commandPendown endp
+
+
+
+;***************************************************************************************************
+;* parseParam                                                                                      *
+;***************************************************************************************************
+parseParam proc near
+			ret
+parseParam endp
+
+
+
+;***************************************************************************************************
 ;* parseFile                                                                                       *
 ;*   Parsowanie pliku wejściowego (linia po linii).                                                *
 ;***************************************************************************************************
 parseFile proc near
+			push cx
 			call parseFile_readIntoBuffer
+
+pf_loop:		call parseWord						; wczytaj argument
+				cmp cx, cx
+				jz pf_endLoop						; jeśli nic nie ma to zakończ
+
+				cmp cx, 4							; czy move?
+				jl pf_badCmd
+				jne pf_nMove
+					mov di, offset moveCmdStr
+pf_nMove:		cmp cx, 5							; czy penup?
+				jne pf_nPenup
+					mov di, offset penupCmdStr
+pf_nPenup:		cmp cx, 6							; czy rotate?
+				jne pf_nRotate
+					mov di, offset rotateCmdStr
+pf_nRotate:		cmp cx, 7							; czy pendown?
+				jne pf_badCmd
+					mov di, offset pendownCmdStr
+
+				call cmdCompare
+				jne pf_badCmd
+
+pf_noParam:		cmp cx, 4							; move?
+				jne pf_enMove
+					call parseParam
+					call commandMove
+					jmp pf_loop
+pf_enMove:		cmp cx, 5							; penup?
+				jne pf_enPenup
+					call commandPenup
+					jmp pf_loop
+				jne pf_enPenup
+pf_enPenup:		cmp cx, 6							; rotate?
+				jne pf_enRotate
+					call parseParam
+					call commandRotate
+					jmp pf_loop
+pf_enRotate:	call commandPendown					; pendown? (!)
+				jmp pf_loop
+
+pf_endLoop:	pop cx
 			ret
+
+pf_badCmd:	mov al, ERROR_BADCOMMAND
+			call error
 parseFile endp
 
 
 
 ;***************************************************************************************************
-;*                                                                                                 *
+;* closeFile                                                                                       *
 ;***************************************************************************************************
 closeFile proc near
 			push ax
@@ -284,7 +431,9 @@ graphStop endp
 
 
 ;***************************************************************************************************
-;* Main                                                                                            *
+;***************************************************************************************************
+;***  Main                                                                                       ***
+;***************************************************************************************************
 ;***************************************************************************************************
 start:		mov ax, seg stosTop					; SS:[SP]
 			mov ss, ax
