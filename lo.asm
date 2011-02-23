@@ -5,12 +5,14 @@
 ;***************************************************************************************************
 ;* Stałe                                                                                           *
 ;***************************************************************************************************
+BUFFER_SIZE			equ 8192
 ERROR_NOARG			equ '1'
 ERROR_TOOFEWARG		equ '2'
 ERROR_TOOMUCHARG	equ '3'
 ERROR_FILEOPEN		equ '4'
 ERROR_FILECLOSE		equ '5'
-ERROR_BADCOMMAND	equ '6'
+ERROR_FILEREAD		equ '6'
+ERROR_BADCOMMAND	equ '7'
 
 
 
@@ -23,6 +25,11 @@ error_msg2		db '!',10, 13, '$'
 
 graphMode		dw 0
 filename		db 256 dup(0)
+filehandler		dw ?
+
+fileBufSize		dw 0
+fileBuf			db BUFFER_SIZE dup(?)
+				db 0
 
 dane ends
 
@@ -96,7 +103,7 @@ readArgsEatSpaces endp
 ;***************************************************************************************************
 readArgsReadWord proc near
 			push bx
-			mov bx, offset filename
+			xor bx, bx
 raew_m:		mov al, es:[si]
 				cmp al, ' '
 				je raew_e							; break
@@ -154,17 +161,60 @@ readArgs endp
 
 
 ;***************************************************************************************************
-;*                                                                                                 *
+;* openFile                                                                                        *
+;*   Zakładamy, że DS jest ustawione na dobry segment.                                             *
 ;***************************************************************************************************
 openFile proc near
+			push ax
+			push dx
+			mov dx, offset filename
+			mov ax, 3d00h
+			int 21h
+			jc of_err
+			mov filehandler, ax
+			pop dx
+			pop ax
+			ret
+
+of_err:		mov al, ERROR_FILEOPEN
+			call error
 openFile endp
 
 
 
 ;***************************************************************************************************
-;*                                                                                                 *
+;*  parseFile_readIntoBuffer                                                                       *
+;*   Wczytuje zawartość pliku do bufora                                                            *
+;***************************************************************************************************
+parseFile_readIntoBuffer proc near
+			FOR rej, <ax, bx, cx, dx>
+				push rej
+			ENDM
+			mov ah, 3fh
+			mov bx, filehandler
+			mov cx, BUFFER_SIZE
+			mov dx, offset fileBuf
+			int 21h
+			jc pf_err
+			mov fileBufSize, ax
+			FOR rej, <dx, cx, bx, ax>
+				pop rej
+			ENDM
+			ret
+
+pf_err:		mov al, ERROR_FILEREAD
+			call error
+parseFile_readIntoBuffer endp
+
+
+
+;***************************************************************************************************
+;* parseFile                                                                                       *
+;*   Parsowanie pliku wejściowego (linia po linii).                                                *
 ;***************************************************************************************************
 parseFile proc near
+			call parseFile_readIntoBuffer
+			ret
 parseFile endp
 
 
@@ -173,14 +223,32 @@ parseFile endp
 ;*                                                                                                 *
 ;***************************************************************************************************
 closeFile proc near
+			push ax
+			push bx
+			xor ax, ax
+			mov ah, 3eh
+			mov bx, filehandler
+			int 21h
+			jc cf_err
+			pop bx
+			pop ax
+			ret
+
+cf_err:		mov al, ERROR_FILECLOSE
+			call error
 closeFile endp
 
 
 
 ;***************************************************************************************************
-;*                                                                                                 *
+;* waitForKeyPress                                                                                 *
 ;***************************************************************************************************
 waitForKeyPress proc near
+			push ax
+			mov ah, 0
+			int 16h
+			pop ax
+			ret
 waitForKeyPress endp
 
 
