@@ -1,4 +1,4 @@
-.387
+;.387
 
 
 
@@ -41,6 +41,7 @@ param			db PARABUFFER_SIZE dup(?)
 posX			db 064h							; X = 100
 posY			db 0A0h							; Y = 160
 rot				db 90							; a = 90' (do góry)
+draw			db 1							; d = true
 
 moveCmdStr		db "move",'$'
 penupCmdStr		db "penup",'$'
@@ -142,9 +143,11 @@ readArgsReadWord endp
 ;*   rejestry SS, SP i DS są odpowiednio zainicjowane.                                             *
 ;***************************************************************************************************
 readArgs proc near
-			FOR rej, <ax, bx, cx, si, di>
-				push rej
-			ENDM
+			push ax
+			push bx
+			push cx
+			push si
+			push di
 
 			xor cx, cx
 			mov cl, es:80h						; sprawdź, czy podano jakikolwiek argument
@@ -162,9 +165,11 @@ readArgs proc near
 			cmp al, 0dh
 			jne ra_tooMA
 
-			FOR rej, <di, si, cx, bx, ax>
-				pop rej
-			ENDM
+			pop di
+			pop si
+			pop cx
+			pop bx
+			pop ax
 			ret
 
 ra_noArgs:	mov al, ERROR_NOARG
@@ -205,9 +210,10 @@ openFile endp
 ;*   Wczytuje zawartość pliku wskazanego przez uchwyt w zmiennej filehandler do bufora.            *
 ;***************************************************************************************************
 parseFile_readIntoBuffer proc near
-			FOR rej, <ax, bx, cx, dx>
-				push rej
-			ENDM
+			push ax
+			push bx
+			push cx
+			push dx
 			mov ah, 3fh
 			mov bx, filehandler
 			mov cx, BUFFER_SIZE
@@ -215,9 +221,10 @@ parseFile_readIntoBuffer proc near
 			int 21h
 			jc pf_err
 			mov fileBufSize, ax
-			FOR rej, <dx, cx, bx, ax>
-				pop rej
-			ENDM
+			pop dx
+			pop cx
+			pop bx
+			pop ax
 			ret
 
 pf_err:		mov al, ERROR_FILEREAD
@@ -227,11 +234,48 @@ parseFile_readIntoBuffer endp
 
 
 ;***************************************************************************************************
+;* eatSpaces                                                                                       *
+;*   Zjada spacje z bufora. A właściwie to przesuwa SI aż natrafi na nie-spację.                   *
+;*   A tabulatury też je.                                                                          *
+;*                                                                                                 *
+;* Paramtry:                                                                                       *
+;*   SI* -- wskaźnik na dane w buforze                                                             *
+;***************************************************************************************************
+eatSpaces proc near
+es_loop:		cmp fileBuf[si], ' '
+				jne es_break
+				cmp fileBuf[si], 09h
+				jne es_break
+				inc si
+				jmp es_loop
+es_break:	ret
+eatSpaces endp
+
+
+
+;***************************************************************************************************
 ;* parseWord                                                                                       *
 ;*   Wczytuje polecenie do zmiennej command a także ustawia CX na ilość wczytanych znaków.         *
 ;*   CX = 0 oznacza koniec pliku                                                                   *
+;*                                                                                                 *
+;* Parametry:                                                                                      *
+;*   CX* -- ilość znaków słowa                                                                     *
+;*   SI* -- przesunięte na początek napisu                                                         *
 ;***************************************************************************************************
 parseWord proc near
+			call eatSpaces
+			push si
+			xor cx, cx							; CX -- ilość wczytanych znaków = 0
+			cmp fileBuf[si], 0dh				; koniec pliku --> break
+			je pw_break
+pw_loop:		inc cx								; CX ++
+				inc si								; SI ++ -- next()
+				cmp fileBuf[si], ' '				; jeśli spacja lub enter - kończ
+				je pw_break
+				cmp fileBuf[si], 0dh
+				je pw_break
+				jmp pw_loop							; powtórz
+pw_break:	pop si
 			ret
 parseWord endp
 
@@ -251,8 +295,10 @@ cmdCompare proc near
 			push cx
 			push bx
 			push ax
+			xor ax, ax
 			mov bx, offset command
-cc_loop:		mov ax, ds:[di]
+cc_loop:		mov al, fileBuf[si]
+				cmp al, ds:[di]
 				jne cc_end
 				inc di
 				inc bx
@@ -269,6 +315,11 @@ cmdCompare endp
 ;* commandMove                                                                                     *
 ;***************************************************************************************************
 commandMove proc near
+			;call calcDestPt
+			;cmp draw, 0
+			;jz cm_noDraw
+			;call drawLine
+cm_noDraw:	;call move
 			ret
 commandMove endp
 
@@ -278,6 +329,7 @@ commandMove endp
 ;* commandPenup                                                                                    *
 ;***************************************************************************************************
 commandPenup proc near
+			mov draw, 0
 			ret
 commandPenup endp
 
@@ -296,6 +348,7 @@ commandRotate endp
 ;* commandPendown                                                                                  *
 ;***************************************************************************************************
 commandPendown proc near
+			mov draw, 1
 			ret
 commandPendown endp
 
@@ -303,6 +356,10 @@ commandPendown endp
 
 ;***************************************************************************************************
 ;* parseParam                                                                                      *
+;*   Zwraca wartość parametru w rejestrze BX                                                       *
+;*                                                                                                 *
+;* Parametry:                                                                                      *
+;*   BX* -- wartość parametru                                                                      *
 ;***************************************************************************************************
 parseParam proc near
 			ret
@@ -313,13 +370,21 @@ parseParam endp
 ;***************************************************************************************************
 ;* parseFile                                                                                       *
 ;*   Parsowanie pliku wejściowego (linia po linii).                                                *
+;*                                                                                                 *
+;* Pseudo-globalnie:                                                                               *
+;*   SI  -- wskaźnik miejsca w buforze                                                             *
+;*   DI  -- wskazywany string do porównania                                                        *
 ;***************************************************************************************************
 parseFile proc near
+			push si
 			push cx
+
 			call parseFile_readIntoBuffer
+			xor cx, cx							; CX -- ilość wczytanych danych = 0
+			xor si, si							; SI -- wskaźnik danych = 0
 
 pf_loop:		call parseWord						; wczytaj argument
-				cmp cx, cx
+				cmp cx, 0
 				jz pf_endLoop						; jeśli nic nie ma to zakończ
 
 				cmp cx, 4							; czy move?
@@ -358,6 +423,7 @@ pf_enRotate:	call commandPendown					; pendown? (!)
 				jmp pf_loop
 
 pf_endLoop:	pop cx
+			pop si
 			ret
 
 pf_badCmd:	mov al, ERROR_BADCOMMAND
