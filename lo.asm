@@ -236,7 +236,7 @@ parseFile_readIntoBuffer endp
 ;***************************************************************************************************
 ;* eatSpaces                                                                                       *
 ;*   Zjada spacje z bufora. A właściwie to przesuwa SI aż natrafi na nie-spację.                   *
-;*   A tabulatury też je.                                                                          *
+;*   A tabulatury też je. I entery też                                                             *
 ;*                                                                                                 *
 ;* Paramtry:                                                                                       *
 ;*   SI* -- wskaźnik na dane w buforze                                                             *
@@ -246,8 +246,11 @@ es_loop:		cmp fileBuf[si], ' '
 				jne es_break
 				cmp fileBuf[si], 09h
 				jne es_break
+				cmp fileBuf[si], 0dh
+				jne es_break
 				inc si
-				jmp es_loop
+				cmp fileBufSize, si
+				jge es_loop
 es_break:	ret
 eatSpaces endp
 
@@ -266,8 +269,8 @@ parseWord proc near
 			call eatSpaces
 			push si
 			xor cx, cx							; CX -- ilość wczytanych znaków = 0
-			cmp fileBuf[si], 0dh				; koniec pliku --> break
-			je pw_break
+			cmp fileBuf[si], 0dh				; koniec pliku --> break (gdyby enter był wewn.
+			je pw_break							;						to by eatSpaces go zjadło)
 pw_loop:		inc cx								; CX ++
 				inc si								; SI ++ -- next()
 				cmp fileBuf[si], ' '				; jeśli spacja lub enter - kończ
@@ -292,20 +295,19 @@ parseWord endp
 ;*   CX  -- ilość znaków do porównania                                                             *
 ;***************************************************************************************************
 cmdCompare proc near
+			push si
 			push cx
-			push bx
 			push ax
-			xor ax, ax
-			mov bx, offset command
+			xor ax, ax							; AX -- temp
 cc_loop:		mov al, fileBuf[si]
 				cmp al, ds:[di]
 				jne cc_end
 				inc di
-				inc bx
-				loop cc_loop
+				inc si
+				loop cc_loop						; powtarzaj CX razy
 cc_end:		pop ax
-			pop bx
 			pop cx
+			pop si
 			ret
 cmdCompare endp
 
@@ -404,6 +406,8 @@ pf_nRotate:		cmp cx, 7							; czy pendown?
 				call cmdCompare
 				jne pf_badCmd
 
+				add si, cx							; SI -- wskazywało na początek łańcucha,
+													;		nie na aktualną pozycję
 pf_noParam:		cmp cx, 4							; move?
 				jne pf_enMove
 					call parseParam
