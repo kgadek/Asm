@@ -40,9 +40,9 @@ param			db PARABUFFER_SIZE dup(?)
 				db 0
 paramInt		db 0
 
-posX			db 064h							; X = 100
-posY			db 0A0h							; Y = 160
-rot				db 90							; a = 90' (do góry)
+posX			dw 064h							; X = 100
+posY			dw 0A0h							; Y = 160
+rot				dw 90							; a = 90' (do góry)
 draw			db 1							; d = true
 
 X1				dw 0							; zmienne pomocnicze
@@ -359,12 +359,14 @@ drawLine proc near
 				xor ax, X2							; swap
 				xor X2, ax
 				xor ax, X2
+				mov X1, ax
 dl_noXsw:	mov ax, Y1							; ustal Y1,Y2: Y1<Y2
 			cmp ax, Y2
 			jl dl_noYsw
 				xor ax, Y2							; swap
 				xor Y2, ax
 				xor ax, Y2
+				mov Y1, ax
 dl_noYsw:	mov ax, X2							; jeśli dX>dY to wybierz rysowanie po X
 			add ax, Y1
 			sub ax, X1
@@ -425,16 +427,45 @@ dl_YpathL:			fldz								; K|> 0 X1' tg(a)
 drawLine endp
 
 
+
+;***************************************************************************************************
+;* calculateFinalXY                                                                                *
+;***************************************************************************************************
+calculateFinalXY proc near
+			ret
+calculateFinalXY endp
+
+
+
 ;***************************************************************************************************
 ;* commandMove                                                                                     *
 ;***************************************************************************************************
 commandMove proc near
-			mov X1, 200
-			mov Y1, 0
-			mov X2, 100
-			mov Y2, 100
-			call drawLine
+			push ax
+
+			mov ax, posX						; (X1,Y1) = (posX, posY)
+			mov X1, ax
+			mov ax, posY
+			mov Y1, ax
+
+			call calculateFinalXY				; wyznacz położenie końcowe
+			mov ax, X2
+			mov posX, ax
+			mov ax, Y2
+			mov posY, ax
+
+			cmp draw, 0							; jeśli pióro opuszczone - rysuj
+			je cm_fin
+				call drawLine
+
+cm_fin:		pop ax
 			ret
+
+			;mov X1, 0
+			;mov Y1, 0
+			;mov X2, 320
+			;mov Y2, 200
+			;call drawLine
 commandMove endp
 
 
@@ -453,6 +484,17 @@ commandPenup endp
 ;* commandRotate                                                                                   *
 ;***************************************************************************************************
 commandRotate proc near
+			push ax
+			xor ax, ax
+			mov al, paramInt					; AX = rot + paramInt
+			add ax, rot							; while (AX > 360)
+cr_reduce:		cmp ax, 0168h						; AX -= 360
+				jl cr_fin
+				sub ax, 0168h
+				jmp cr_reduce
+
+cr_fin:		mov rot, ax							; rot = AX
+			pop ax
 			ret
 commandRotate endp
 
