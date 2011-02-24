@@ -1,4 +1,4 @@
-;.387
+.387
 
 
 
@@ -38,7 +38,7 @@ command			db CMDBUFFER_SIZE dup(?)
 				db 0
 param			db PARABUFFER_SIZE dup(?)
 				db 0
-paramInt		db 0
+paramInt		dw 0
 
 posX			dw 064h							; X = 100
 posY			dw 0A0h							; Y = 160
@@ -392,6 +392,7 @@ dl_XpathL:			fldz								; K|> 0 Y1' tg(a)
 					inc cx
 					cmp cx, X2
 					jle dl_XpathL
+				fcompp								; K|>
 				pop dx
 				pop cx
 				pop ax
@@ -416,6 +417,7 @@ dl_YpathL:			fldz								; K|> 0 X1' tg(a)
 					inc dx
 					cmp dx, Y2
 					jle dl_YpathL
+				fcompp								; K|>
 				pop dx
 				pop cx
 				pop ax
@@ -432,6 +434,25 @@ drawLine endp
 ;* calculateFinalXY                                                                                *
 ;***************************************************************************************************
 calculateFinalXY proc near
+			push ax
+			
+			fild rot							; K|> a
+			fsincos								; K|> cos(a) sin(a)
+			fild paramInt						; K|> R cos(a) sin(a)
+			fmulp st(1), st(0)					; K|> xD sin(a)
+			frndint								; K|> int(xD) sin(a)
+			fistp X2							; K|> sin(a)
+			fild paramInt						; K|> R sin(a)
+			fmulp st(1), st(0)					; K|> yD
+			frndint								; K|> int(yD)
+			fistp Y2							; K|>
+
+			mov ax, posX
+			add X2, ax
+			mov ax, posY
+			add Y2, ax
+
+			pop ax
 			ret
 calculateFinalXY endp
 
@@ -485,8 +506,7 @@ commandPenup endp
 ;***************************************************************************************************
 commandRotate proc near
 			push ax
-			xor ax, ax
-			mov al, paramInt					; AX = rot + paramInt
+			mov ax, paramInt					; AX = rot + paramInt
 			add ax, rot							; while (AX > 360)
 cr_reduce:		cmp ax, 0168h						; AX -= 360
 				jl cr_fin
@@ -551,7 +571,7 @@ pp_loop:		mov bl, fileBuf[si]
 
 				jmp pp_loop
 
-pp_done:	mov paramInt, al
+pp_done:	mov paramInt, ax
 			pop cx
 			pop bx
 			pop ax
