@@ -242,15 +242,16 @@ parseFile_readIntoBuffer endp
 ;*   SI* -- wskaźnik na dane w buforze                                                             *
 ;***************************************************************************************************
 eatSpaces proc near
-es_loop:		cmp fileBuf[si], ' '
-				jne es_break
-				cmp fileBuf[si], 09h
-				jne es_break
-				cmp fileBuf[si], 0dh
-				jne es_break
-				inc si
-				cmp fileBufSize, si
-				jge es_loop
+			jmp es_loop
+es_getNext:		inc si							; micro-trick znaleziony u Knutha :)
+es_loop:		cmp fileBufSize, si
+				jle es_break
+				cmp fileBuf[si], ' '			; spacja?
+				je es_getNext
+				cmp fileBuf[si], 09h			; tab?
+				je es_getNext
+				cmp fileBuf[si], 0ah			; enter?
+				je es_getNext
 es_break:	ret
 eatSpaces endp
 
@@ -263,19 +264,19 @@ eatSpaces endp
 ;*                                                                                                 *
 ;* Parametry:                                                                                      *
 ;*   CX* -- ilość znaków słowa                                                                     *
-;*   SI* -- przesunięte na początek napisu                                                         *
+;*   SI  -- przesunięte na początek napisu                                                         *
 ;***************************************************************************************************
 parseWord proc near
 			call eatSpaces
 			push si
 			xor cx, cx							; CX -- ilość wczytanych znaków = 0
-			cmp fileBuf[si], 0dh				; koniec pliku --> break (gdyby enter był wewn.
+			cmp fileBuf[si], 0ah				; koniec pliku --> break (gdyby enter był wewn.
 			je pw_break							;						to by eatSpaces go zjadło)
 pw_loop:		inc cx								; CX ++
 				inc si								; SI ++ -- next()
 				cmp fileBuf[si], ' '				; jeśli spacja lub enter - kończ
 				je pw_break
-				cmp fileBuf[si], 0dh
+				cmp fileBuf[si], 0ah
 				je pw_break
 				jmp pw_loop							; powtórz
 pw_break:	pop si
@@ -293,21 +294,22 @@ parseWord endp
 ;*   DS  -- segment danych                                                                         *
 ;*   DI* -- offset łańcucha                                                                        *
 ;*   CX  -- ilość znaków do porównania                                                             *
+;*   SI* -- przesuwamy się wskaźnikiem CX razy w prawo                                             *
 ;***************************************************************************************************
 cmdCompare proc near
-			push si
 			push cx
 			push ax
 			xor ax, ax							; AX -- temp
 cc_loop:		mov al, fileBuf[si]
 				cmp al, ds:[di]
 				jne cc_end
+				pushf
 				inc di
 				inc si
+				popf
 				loop cc_loop						; powtarzaj CX razy
 cc_end:		pop ax
 			pop cx
-			pop si
 			ret
 cmdCompare endp
 
@@ -317,6 +319,15 @@ cmdCompare endp
 ;* commandMove                                                                                     *
 ;***************************************************************************************************
 commandMove proc near
+			push ax
+			push di
+			mov ax, 0a000h
+			mov es, ax
+			mov di, 320*10+10
+			mov al, 10
+			mov es:[di], al
+			pop di
+			pop ax
 			;call calcDestPt
 			;cmp draw, 0
 			;jz cm_noDraw
@@ -393,21 +404,22 @@ pf_loop:		call parseWord						; wczytaj argument
 				jl pf_badCmd
 				jne pf_nMove
 					mov di, offset moveCmdStr
+					jmp pf_nn
 pf_nMove:		cmp cx, 5							; czy penup?
 				jne pf_nPenup
 					mov di, offset penupCmdStr
+					jmp pf_nn
 pf_nPenup:		cmp cx, 6							; czy rotate?
 				jne pf_nRotate
 					mov di, offset rotateCmdStr
+					jmp pf_nn
 pf_nRotate:		cmp cx, 7							; czy pendown?
 				jne pf_badCmd
 					mov di, offset pendownCmdStr
 
-				call cmdCompare
+pf_nn:			call cmdCompare						; także przesuwa wskaźnik SI za koniec słowa
 				jne pf_badCmd
 
-				add si, cx							; SI -- wskazywało na początek łańcucha,
-													;		nie na aktualną pozycję
 pf_noParam:		cmp cx, 4							; move?
 				jne pf_enMove
 					call parseParam
