@@ -45,6 +45,12 @@ posY			db 0A0h							; Y = 160
 rot				db 90							; a = 90' (do góry)
 draw			db 1							; d = true
 
+X1				dw 0							; zmienne pomocnicze
+Y1				dw 0
+X2				dw 0
+Y2				dw 0
+Tmp				dw 0
+
 moveCmdStr		db "move",'$'
 penupCmdStr		db "penup",'$'
 rotateCmdStr	db "rotate",'$'
@@ -317,24 +323,117 @@ cmdCompare endp
 
 
 
+
+;***************************************************************************************************
+;* drawPixel                                                                                       *
+;*                                                                                                 *
+;* Parametry:                                                                                      *
+;*   CX  -- współrzędna X piksela                                                                  *
+;*   DX  -- współrzędna Y piksela                                                                  *
+;***************************************************************************************************
+drawPixel proc near
+			push ax
+			mov ax, 0c0fh
+			int 10h
+			pop ax
+			ret
+drawPixel endp
+
+
+
+;***************************************************************************************************
+;* drawLine                                                                                        *
+;*                                                                                                 *
+;* Parametry:                                                                                      *
+;*   X1,Y1* -- początek                                                                            *
+;*   X2,Y2* -- koniec                                                                              *
+;***************************************************************************************************
+drawLine proc near
+			push ax
+			push cx
+			push dx
+
+			mov ax, X1							; ustal X1,X2: X1<X2
+			cmp ax, X2
+			jl dl_noXsw
+				xor ax, X2							; swap
+				xor X2, ax
+				xor ax, X2
+dl_noXsw:	mov ax, Y1							; ustal Y1,Y2: Y1<Y2
+			cmp ax, Y2
+			jl dl_noYsw
+				xor ax, Y2							; swap
+				xor Y2, ax
+				xor ax, Y2
+dl_noYsw:	mov ax, X2							; jeśli dX>dY to wybierz rysowanie po X
+			add ax, Y1
+			sub ax, X1
+			sub ax, Y2
+			cmp ax, 0
+			jl dl_Ypath
+				fild Y2								; K|> (Y2)
+				fild Y1								; K|> (Y1) (Y2)
+				fsubp st(1), st(0)					; K|> (Y2-Y1)
+				fild X2								; K|> (X2) (Y2-Y1)
+				fild X1								; K|> (X1) (X2) (Y2-Y1)
+				fsubp st(1), st(0)					; K|> (X2-X1) (Y2-Y1)
+				fdivp st(1), st(0)					; K|> ((Y2-Y1)/(X2-X1))=tg(a)
+				fild Y1								; K|> Y1 tg(a)
+				mov cx, X1
+dl_XpathL:			fldz								; K|> 0 Y1' tg(a)
+					fadd st(0), st(1)					; K|> Y1' Y1' tg(a)
+					frndint								; K|> int(Y1') Y1' tg(a)
+					fistp Tmp							; K|> Y1' tg(a)
+					fadd st(0), st(1)					; K|> Y1'' tg(a)
+					mov dx, Tmp
+					call drawPixel
+					inc cx
+					cmp cx, X2
+					jle dl_XpathL
+				pop dx
+				pop cx
+				pop ax
+				ret
+
+dl_Ypath:		fild X2								; K|> (X2)
+				fild X1								; K|> (X1) (X2)
+				fsubp st(1), st(0)					; K|> (X2-X1)
+				fild Y2 							; K|> (Y2) (X2-X1)
+				fild Y1								; K|> (Y1) (Y2) (X2-X1)
+				fsubp st(1), st(0)					; K|> (Y2-Y1) (X2-X1)
+				fdivp st(1), st(0)					; K|> ((X2-X1)/(Y2-Y1))=tg(a)
+				fild X1								; K|> X1 tg(a)
+				mov dx, Y1
+dl_YpathL:			fldz								; K|> 0 X1' tg(a)
+					fadd st(0), st(1)					; K|> X1' X1' tg(a)
+					frndint								; K|> int(X1') X1' tg(a)
+					fistp Tmp							; K|> X1' tg(a)
+					fadd st(0), st(1)					; K|> X1'' tg(a)
+					mov cx, Tmp
+					call drawPixel
+					inc dx
+					cmp dx, Y2
+					jle dl_YpathL
+				pop dx
+				pop cx
+				pop ax
+				ret
+			pop dx
+			pop cx
+			pop ax
+			ret
+drawLine endp
+
+
 ;***************************************************************************************************
 ;* commandMove                                                                                     *
 ;***************************************************************************************************
 commandMove proc near
-			push ax
-			push di
-			mov ax, 0a000h
-			mov es, ax
-			mov di, 320*10+10
-			mov al, 10
-			mov es:[di], al
-			pop di
-			pop ax
-			;call calcDestPt
-			;cmp draw, 0
-			;jz cm_noDraw
-			;call drawLine
-cm_noDraw:	;call move
+			mov X1, 200
+			mov Y1, 0
+			mov X2, 100
+			mov Y2, 100
+			call drawLine
 			ret
 commandMove endp
 
@@ -565,6 +664,7 @@ start:		mov ax, seg stosTop					; SS:[SP]
 			mov ax, seg filename				; DS:[] - segment danych
 			mov ds, ax
 
+			finit
 			call readArgs
 			call openFile
 			call graphStart
