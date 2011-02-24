@@ -436,7 +436,12 @@ drawLine endp
 calculateFinalXY proc near
 			push ax
 			
-			fild rot							; K|> a
+			mov Tmp, 0b4h						; Tmp = 180
+			fldpi								; K|> PI
+			fild Tmp							; K|> 180 PI
+			fdivp st(1), st(0)					; K|> PI/180
+			fild rot							; K|> rot PI/180
+			fmulp st(1), st(0)					; K|> a
 			fsincos								; K|> cos(a) sin(a)
 			fild paramInt						; K|> R cos(a) sin(a)
 			fmulp st(1), st(0)					; K|> xD sin(a)
