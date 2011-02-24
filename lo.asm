@@ -15,6 +15,7 @@ ERROR_FILEOPEN		equ '4'
 ERROR_FILECLOSE		equ '5'
 ERROR_FILEREAD		equ '6'
 ERROR_BADCOMMAND	equ '7'
+ERROR_BADARGUMENT	equ '8'
 
 
 
@@ -37,6 +38,7 @@ command			db CMDBUFFER_SIZE dup(?)
 				db 0
 param			db PARABUFFER_SIZE dup(?)
 				db 0
+paramInt		db 0
 
 posX			db 064h							; X = 100
 posY			db 0A0h							; Y = 160
@@ -270,8 +272,8 @@ parseWord proc near
 			call eatSpaces
 			push si
 			xor cx, cx							; CX -- ilość wczytanych znaków = 0
-			cmp fileBuf[si], 0ah				; koniec pliku --> break (gdyby enter był wewn.
-			je pw_break							;						to by eatSpaces go zjadło)
+			cmp fileBufSize, si					; koniec pliku --> break
+			jle pw_break
 pw_loop:		inc cx								; CX ++
 				inc si								; SI ++ -- next()
 				cmp fileBuf[si], ' '				; jeśli spacja lub enter - kończ
@@ -372,10 +374,50 @@ commandPendown endp
 ;*   Zwraca wartość parametru w rejestrze BX                                                       *
 ;*                                                                                                 *
 ;* Parametry:                                                                                      *
-;*   BX* -- wartość parametru                                                                      *
+;*   paramInt -- wartość wczytana z parametru                                                      *
+;*   SI* -- wskaźnik na bufor z poleceniami                                                        *
 ;***************************************************************************************************
 parseParam proc near
+			call eatSpaces
+			push ax
+			push bx
+			push cx
+
+			xor ax, ax
+			xor bx, bx
+			mov cx, 0ah							; CX -- podstawa = 10
+
+pp_loop:		mov bl, fileBuf[si]
+				cmp bl, ' '							; sprawdź czy wejście :- biały znak ?
+				je pp_done
+				cmp bl, 09h
+				je pp_done
+				cmp bl, 0ah
+				je pp_done
+
+				cmp bl, '0'							; sprawdź czy wejście :- [0,9] ?
+				jl pp_err
+				cmp bl, '9'
+				jg pp_err
+				sub bl, '0'
+
+				mul cl								; AL = 10*AL + BL
+				add al, bl
+
+				inc si
+				cmp fileBufSize, si
+				jle pp_done
+
+				jmp pp_loop
+
+pp_done:	mov paramInt, al
+			pop cx
+			pop bx
+			pop ax
 			ret
+
+pp_err:		mov al, ERROR_BADARGUMENT
+			call error
 parseParam endp
 
 
